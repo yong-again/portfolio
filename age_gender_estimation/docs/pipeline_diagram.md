@@ -4,7 +4,7 @@
 
 ```mermaid
 graph TD
-    A[Input Image<br/>JPG/PNG, 다양한 해상도] --> B[Head Detection]
+    A[Input Image<br/>JPG/PNG, 1080x1920] --> B[Head Detection]
     B --> C[Crop Head Regions]
     C --> D[Image Loading]
     D --> E[Resize<br/>모델 입력 크기로 조정<br/>예: 224x224]
@@ -99,29 +99,4 @@ graph LR
     style G fill:#e0f2f1
     style H fill:#e0f2f1
     style I fill:#c8e6c9
-```
-
-## Multi-Task Learning 구조
-
-```mermaid
-graph TD
-    A[Shared Backbone<br/>Feature Extractor] --> B[Age Head]
-    A --> C[Gender Head]
-    B --> D[Age Classification]
-    C --> E[Gender Classification]
-    
-    F[장점] --> G[공유 feature로 효율적인 학습]
-    F --> H[두 작업이 서로 도움을 주는 효과]
-    F --> I[단일 forward pass로 두 예측 동시 수행]
-    F --> J[나이와 성별을 동시에 학습 및 추론]
-    
-    style A fill:#f3e5f5
-    style B fill:#fce4ec
-    style C fill:#fce4ec
-    style D fill:#e0f2f1
-    style E fill:#e0f2f1
-    style F fill:#fff9c4
-    style G fill:#e8f5e9
-    style H fill:#e8f5e9
-    style I fill:#e8f5e9
 ```

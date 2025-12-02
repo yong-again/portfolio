@@ -11,7 +11,7 @@
 
 이 시스템은 다음과 같은 파이프라인을 가집니다:
 
-1. **Phone Region Detection**: 입력 이미지(1080x1920)에서 휴대폰 영역 검출 (Detection 또는 Segmentation)
+1. **Phone Region Detection**: 입력 이미지(1920x1080)에서 휴대폰 영역 검출 (Detection 또는 Segmentation)
 2. **Defect Segmentation**: 검출된 영역에서 결함 영역 Segmentation
 3. **Defect Classification**: 검출된 segmentation pixel을 통해 결함 여부 결정 (각 threshold 적용)
 4. **Grade Selection**: 가장 심한 결함 2개 선정
@@ -22,7 +22,7 @@
 
 ```mermaid
 graph TD
-    A[Input Image<br/>1080x1920] --> B[Phone Region Detection<br/>YOLO or Segmentation]
+    A[Input Image<br/>1920x1080] --> B[Phone Region Detection<br/>YOLO or Segmentation]
     B --> C[Crop Phone Region]
     C --> D{Section Type}
     D -->|Front| E[Front Pipeline]

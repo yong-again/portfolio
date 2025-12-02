@@ -118,7 +118,6 @@
 ### 모델 크기
 
 - EfficientNet-B0/B1: 모바일 디바이스에 적합
-- ResNet-18: 경량화된 버전 사용 가능
 - Multi-task learning으로 두 모델을 하나로 통합하여 메모리 효율성 향상
 
 ### 추론 속도
@@ -132,7 +131,6 @@
 
 - 모델 가중치 크기 최소화
 - Feature map 크기 고려
-- Quantization으로 메모리 사용량 감소
 - Shared backbone으로 메모리 효율성 향상
 
 ## 실험 결과
