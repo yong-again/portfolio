@@ -1,0 +1,31 @@
+# Core Dependencies
+torch>=1.12.0
+torchvision>=0.13.0
+
+# Computer Vision
+opencv-python>=4.6.0
+Pillow>=9.0.0
+
+# Model Libraries
+timm>=0.6.0
+
+# Configuration
+PyYAML>=6.0
+
+# Utilities
+tqdm>=4.64.0
+numpy>=1.21.0
+matplotlib>=3.5.0
+seaborn>=0.12.0
+pandas>=1.4.0
+
+# ONNX Export
+onnx>=1.12.0
+onnxruntime>=1.12.0
+
+# YOLO for Head Detection
+ultralytics>=8.0.0
+
+# Optional: For better performance
+# tensorboard>=2.10.0  # Uncomment if you want to use TensorBoard
+
