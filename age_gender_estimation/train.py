@@ -115,20 +115,21 @@ def train_epoch(
     
     for batch_idx, batch in enumerate(pbar):
         images = batch['images'].to(device)
-        age_bins = batch['age_bins'].to(device)
+        ages = batch['ages'].to(device)  # 0~100
         genders = batch['genders'].to(device)
         
         # Forward pass
         optimizer.zero_grad()
-        outputs = model(images)
+        outputs = model(images)  # Age와 Gender logits을 동시에 출력
         
-        age_logits = outputs['age_logits']
-        gender_logits = outputs['gender_logits']
+        age_logits = outputs['age_logits']  # [B, 101] (0~100세)
+        gender_logits = outputs['gender_logits']  # [B, 2] (Male/Female)
         
         # Loss 계산
-        age_loss = criterion_age(age_logits, age_bins)
+        age_loss = criterion_age(age_logits, ages)
         gender_loss = criterion_gender(gender_logits, genders)
         
+        # Multi-task loss: 가중합으로 결합
         total_loss_batch = age_weight * age_loss + gender_weight * gender_loss
         
         # Backward pass
@@ -141,10 +142,10 @@ def train_epoch(
         total_gender_loss += gender_loss.item()
         
         # Accuracy 계산
-        age_preds = torch.argmax(age_logits, dim=1)
+        age_preds = torch.argmax(age_logits, dim=1)  # 0~100
         gender_preds = torch.argmax(gender_logits, dim=1)
         
-        age_correct += (age_preds == age_bins).sum().item()
+        age_correct += (age_preds == ages).sum().item()
         gender_correct += (gender_preds == genders).sum().item()
         total_samples += images.size(0)
         num_batches += 1
@@ -198,19 +199,20 @@ def validate(
         
         for batch in pbar:
             images = batch['images'].to(device)
-            age_bins = batch['age_bins'].to(device)
+            ages = batch['ages'].to(device)  # 0~100
             genders = batch['genders'].to(device)
             
             # Forward pass
-            outputs = model(images)
+            outputs = model(images)  # Age와 Gender logits을 동시에 출력
             
-            age_logits = outputs['age_logits']
-            gender_logits = outputs['gender_logits']
+            age_logits = outputs['age_logits']  # [B, 101] (0~100세)
+            gender_logits = outputs['gender_logits']  # [B, 2] (Male/Female)
             
-            # Loss 계산
-            age_loss = criterion_age(age_logits, age_bins)
+            # Loss 계산: 두 작업의 loss를 동시에 계산
+            age_loss = criterion_age(age_logits, ages)
             gender_loss = criterion_gender(gender_logits, genders)
             
+            # Multi-task loss: 가중합으로 결합
             total_loss_batch = age_weight * age_loss + gender_weight * gender_loss
             
             total_loss += total_loss_batch.item()
@@ -218,10 +220,10 @@ def validate(
             total_gender_loss += gender_loss.item()
             
             # Accuracy 계산
-            age_preds = torch.argmax(age_logits, dim=1)
+            age_preds = torch.argmax(age_logits, dim=1)  # 0~100
             gender_preds = torch.argmax(gender_logits, dim=1)
             
-            age_correct += (age_preds == age_bins).sum().item()
+            age_correct += (age_preds == ages).sum().item()
             gender_correct += (gender_preds == genders).sum().item()
             total_samples += images.size(0)
             num_batches += 1

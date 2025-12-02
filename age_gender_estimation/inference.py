@@ -20,7 +20,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from models.network import build_network
 from models.utils import load_checkpoint
-from models.age_head import bin_to_age_range, create_age_bins
 from models.gender_head import class_to_gender
 from preprocess.transforms import get_val_transforms
 
@@ -56,26 +55,14 @@ def inference_single_image(
     image_tensor = transform(image)
     image_tensor = image_tensor.unsqueeze(0).to(device)  # [1, C, H, W]
     
-    # 추론
+    # 추론: 나이와 성별을 동시에 예측
     model.eval()
     with torch.no_grad():
-        predictions = model.predict(image_tensor)
-    
-    # Age bins 생성
-    age_config = config['model']['age']
-    if 'bins' in age_config:
-        age_bins = age_config['bins']
-    else:
-        age_bins = create_age_bins(
-            num_bins=age_config['num_bins'],
-            min_age=age_config['min_age'],
-            max_age=age_config['max_age']
-        )
+        predictions = model.predict(image_tensor)  # Age와 Gender를 동시에 예측
     
     # 결과 파싱
-    age_bin_idx = predictions['age']['predicted_bin'][0].item()
-    age_range = bin_to_age_range(age_bin_idx, age_bins)
-    age_prob = predictions['age']['probs'][0][age_bin_idx].item()
+    age_predicted = predictions['age']['predicted_age'][0].item()  # 0~100세
+    age_prob = predictions['age']['probs'][0][age_predicted].item()
     
     gender_class = predictions['gender']['predicted_class'][0].item()
     gender_str = class_to_gender(gender_class)
@@ -84,9 +71,7 @@ def inference_single_image(
     result = {
         'image_path': image_path,
         'age': {
-            'bin': age_bin_idx,
-            'range': age_range,
-            'estimated_age': (age_range[0] + age_range[1]) // 2,
+            'predicted_age': age_predicted,  # 0~100세
             'confidence': age_prob
         },
         'gender': {
@@ -130,10 +115,7 @@ def save_results(
         for result in results:
             rows.append({
                 'image_path': result['image_path'],
-                'age_bin': result['age']['bin'],
-                'age_min': result['age']['range'][0],
-                'age_max': result['age']['range'][1],
-                'estimated_age': result['age']['estimated_age'],
+                'age': result['age']['predicted_age'],  # 0~100세
                 'age_confidence': result['age']['confidence'],
                 'gender': result['gender']['label'],
                 'gender_confidence': result['gender']['confidence']
@@ -161,7 +143,7 @@ def visualize_result(image: Image.Image, result: Dict[str, Any]) -> Image.Image:
     draw = ImageDraw.Draw(image)
     
     # 텍스트 정보
-    age_info = f"Age: {result['age']['estimated_age']} ({result['age']['range'][0]}-{result['age']['range'][1]})"
+    age_info = f"Age: {result['age']['predicted_age']}세"  # 0~100세
     gender_info = f"Gender: {result['gender']['label']}"
     age_conf = f"Age Conf: {result['age']['confidence']:.2f}"
     gen_conf = f"Gender Conf: {result['gender']['confidence']:.2f}"
@@ -268,9 +250,8 @@ def main():
         
         results.append(result)
         
-        # 결과 출력
-        print(f"  Age: {result['age']['estimated_age']} ({result['age']['range'][0]}-{result['age']['range'][1]}) "
-              f"[Conf: {result['age']['confidence']:.3f}]")
+        # 결과 출력 (나이와 성별을 동시에 출력)
+        print(f"  Age: {result['age']['predicted_age']}세 [Conf: {result['age']['confidence']:.3f}]")
         print(f"  Gender: {result['gender']['label']} [Conf: {result['gender']['confidence']:.3f}]")
         
         # 시각화 이미지 저장

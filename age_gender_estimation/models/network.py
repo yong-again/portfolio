@@ -26,7 +26,7 @@ class AgeGenderNetwork(nn.Module):
         backbone_name: str = "efficientnet-b0",
         backbone_pretrained: bool = True,
         freeze_backbone: bool = False,
-        age_num_bins: int = 10,
+        age_num_classes: int = 101,  # 0~100세
         age_hidden_dim: int = 512,
         gender_num_classes: int = 2,
         gender_hidden_dim: int = 256,
@@ -37,7 +37,7 @@ class AgeGenderNetwork(nn.Module):
             backbone_name: Backbone 모델 이름
             backbone_pretrained: Backbone 사전 학습 가중치 사용 여부
             freeze_backbone: Backbone 파라미터 고정 여부
-            age_num_bins: Age 연령대 구간 개수
+            age_num_classes: Age 클래스 수 (0~100세 = 101)
             age_hidden_dim: Age head hidden dimension
             gender_num_classes: Gender 클래스 수 (2)
             gender_hidden_dim: Gender head hidden dimension
@@ -57,7 +57,7 @@ class AgeGenderNetwork(nn.Module):
         # Age Head
         self.age_head = AgeHead(
             input_dim=feature_dim,
-            num_bins=age_num_bins,
+            num_classes=age_num_classes,
             hidden_dim=age_hidden_dim,
             dropout=dropout
         )
@@ -84,7 +84,7 @@ class AgeGenderNetwork(nn.Module):
         
         Returns:
             Dictionary containing:
-                - 'age_logits': Age logits [B, num_bins]
+                - 'age_logits': Age logits [B, num_classes] (0~100세)
                 - 'gender_logits': Gender logits [B, num_classes]
                 - 'features': (optional) Backbone features [B, feature_dim]
         """
@@ -117,9 +117,9 @@ class AgeGenderNetwork(nn.Module):
         Returns:
             Dictionary containing:
                 - 'age': Age prediction results
-                    - 'logits': [B, num_bins]
-                    - 'probs': [B, num_bins]
-                    - 'predicted_bin': [B]
+                    - 'logits': [B, num_classes] (0~100세)
+                    - 'probs': [B, num_classes]
+                    - 'predicted_age': [B] (0~100)
                 - 'gender': Gender prediction results
                     - 'logits': [B, num_classes]
                     - 'probs': [B, num_classes]
@@ -172,7 +172,7 @@ def build_network(config: Dict) -> AgeGenderNetwork:
         backbone_name=backbone_config['name'],
         backbone_pretrained=backbone_config['pretrained'],
         freeze_backbone=backbone_config.get('freeze_backbone', False),
-        age_num_bins=age_config['num_bins'],
+        age_num_classes=age_config['num_classes'],
         age_hidden_dim=age_config['hidden_dim'],
         gender_num_classes=gender_config['num_classes'],
         gender_hidden_dim=gender_config['hidden_dim'],
@@ -187,7 +187,7 @@ if __name__ == "__main__":
     network = AgeGenderNetwork(
         backbone_name="efficientnet-b0",
         backbone_pretrained=False,  # 테스트용
-        age_num_bins=10,
+        age_num_classes=101,  # 0~100세
         gender_num_classes=2
     )
     
@@ -202,7 +202,7 @@ if __name__ == "__main__":
     # Predict
     predictions = network.predict(dummy_input)
     print("\nPredictions:")
-    print(f"  Age predicted bins: {predictions['age']['predicted_bin']}")
+    print(f"  Age predicted ages: {predictions['age']['predicted_age']}")
     print(f"  Gender predicted classes: {predictions['gender']['predicted_class']}")
     print(f"  Gender confidence: {predictions['gender']['confidence']}")
 

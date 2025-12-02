@@ -2,6 +2,7 @@
 Evaluation Script for Age & Gender Estimation
 
 검증 데이터셋으로 모델을 평가하고 메트릭을 계산합니다.
+나이 예측 정확도는 ±5세 범위를 기준으로 측정합니다.
 """
 
 import torch
@@ -25,9 +26,31 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from models.network import build_network
 from models.utils import load_checkpoint
-from models.age_head import bin_to_age_range, create_age_bins
 from models.gender_head import class_to_gender
 from preprocess.dataset import AgeGenderDataset, collate_fn
+
+
+def calculate_age_accuracy_range(
+    age_preds: np.ndarray,
+    age_targets: np.ndarray,
+    range_size: int = 5
+) -> float:
+    """
+    나이 예측 정확도를 특정 범위 내에서 계산합니다.
+    
+    Args:
+        age_preds: 예측된 나이 [N] (0~100)
+        age_targets: 실제 나이 [N] (0~100)
+        range_size: 허용 범위 (±range_size)
+    
+    Returns:
+        범위 내 정확도 (0~1)
+    """
+    age_diff = np.abs(age_preds - age_targets)
+    correct = np.sum(age_diff <= range_size)
+    accuracy = correct / len(age_preds) if len(age_preds) > 0 else 0.0
+    
+    return accuracy
 
 
 def evaluate_model(
@@ -54,15 +77,13 @@ def evaluate_model(
     all_age_targets = []
     all_gender_preds = []
     all_gender_targets = []
-    all_age_probs = []
-    all_gender_probs = []
     
     with torch.no_grad():
         pbar = tqdm(dataloader, desc="Evaluating")
         
         for batch in pbar:
             images = batch['images'].to(device)
-            age_bins = batch['age_bins'].to(device)
+            ages = batch['ages'].to(device)  # 0~100
             genders = batch['genders'].to(device)
             
             # Forward pass
@@ -72,69 +93,44 @@ def evaluate_model(
             gender_logits = outputs['gender_logits']
             
             # Predictions
-            age_preds = torch.argmax(age_logits, dim=1)
+            age_preds = torch.argmax(age_logits, dim=1)  # 0~100
             gender_preds = torch.argmax(gender_logits, dim=1)
-            
-            # Probabilities
-            age_probs = torch.softmax(age_logits, dim=1)
-            gender_probs = torch.softmax(gender_logits, dim=1)
             
             # Collect results
             all_age_preds.extend(age_preds.cpu().numpy())
-            all_age_targets.extend(age_bins.cpu().numpy())
+            all_age_targets.extend(ages.cpu().numpy())
             all_gender_preds.extend(gender_preds.cpu().numpy())
             all_gender_targets.extend(genders.cpu().numpy())
-            all_age_probs.extend(age_probs.cpu().numpy())
-            all_gender_probs.extend(gender_probs.cpu().numpy())
     
     # Convert to numpy arrays
     all_age_preds = np.array(all_age_preds)
     all_age_targets = np.array(all_age_targets)
     all_gender_preds = np.array(all_gender_preds)
     all_gender_targets = np.array(all_gender_targets)
-    all_age_probs = np.array(all_age_probs)
-    all_gender_probs = np.array(all_gender_probs)
     
     # Age metrics
     age_accuracy = accuracy_score(all_age_targets, all_age_preds)
     
-    # Top-3 accuracy for age
-    age_top3_correct = 0
-    for i in range(len(all_age_targets)):
-        top3_preds = np.argsort(all_age_probs[i])[-3:][::-1]
-        if all_age_targets[i] in top3_preds:
-            age_top3_correct += 1
-    age_top3_accuracy = age_top3_correct / len(all_age_targets)
+    # Age accuracy by range (±1, ±3, ±5, ±10, ±15)
+    eval_config = config.get('evaluation', {})
+    age_ranges = eval_config.get('age_accuracy_ranges', [1, 3, 5, 10, 15])
+    
+    age_accuracy_by_range = {}
+    for range_size in age_ranges:
+        acc = calculate_age_accuracy_range(all_age_preds, all_age_targets, range_size)
+        age_accuracy_by_range[f'±{range_size}'] = acc
     
     # Gender metrics
     gender_accuracy = accuracy_score(all_gender_targets, all_gender_preds)
     
-    # Per-bin accuracy for age
-    age_config = config['model']['age']
-    if 'bins' in age_config:
-        age_bins = age_config['bins']
-    else:
-        age_bins = create_age_bins(
-            num_bins=age_config['num_bins'],
-            min_age=age_config['min_age'],
-            max_age=age_config['max_age']
-        )
-    
-    per_bin_accuracy = {}
-    for bin_idx in range(len(age_bins)):
-        bin_mask = all_age_targets == bin_idx
-        if np.sum(bin_mask) > 0:
-            bin_acc = accuracy_score(
-                all_age_targets[bin_mask],
-                all_age_preds[bin_mask]
-            )
-            per_bin_accuracy[f'bin_{bin_idx}'] = bin_acc
+    # Mean Absolute Error (MAE) for age
+    age_mae = np.mean(np.abs(all_age_preds - all_age_targets))
     
     metrics = {
         'age_accuracy': age_accuracy,
-        'age_top3_accuracy': age_top3_accuracy,
-        'gender_accuracy': gender_accuracy,
-        'per_bin_accuracy': per_bin_accuracy
+        'age_accuracy_by_range': age_accuracy_by_range,
+        'age_mae': age_mae,
+        'gender_accuracy': gender_accuracy
     }
     
     # Confusion matrices
@@ -233,38 +229,28 @@ def main():
     print("\n" + "=" * 50)
     print("Evaluation Results")
     print("=" * 50)
-    print(f"Age Accuracy: {metrics['age_accuracy']:.4f}")
-    print(f"Age Top-3 Accuracy: {metrics['age_top3_accuracy']:.4f}")
-    print(f"Gender Accuracy: {metrics['gender_accuracy']:.4f}")
-    
-    if metrics['per_bin_accuracy']:
-        print("\nPer-bin Age Accuracy:")
-        for bin_name, acc in metrics['per_bin_accuracy'].items():
-            print(f"  {bin_name}: {acc:.4f}")
+    print(f"Age Accuracy (Exact): {metrics['age_accuracy']:.4f}")
+    print(f"Age MAE: {metrics['age_mae']:.2f} years")
+    print("\nAge Accuracy by Range:")
+    for range_name, acc in metrics['age_accuracy_by_range'].items():
+        marker = " <-- Selected" if range_name == "±5" else ""
+        print(f"  {range_name}세 범위: {acc:.4f}{marker}")
+    print(f"\nGender Accuracy: {metrics['gender_accuracy']:.4f}")
     
     # Confusion matrix 저장
     if args.save_confusion_matrix or config['evaluation'].get('save_confusion_matrix', False):
         output_dir = Path(config['paths']['output_dir'])
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Age bins 라벨 생성
-        age_config = config['model']['age']
-        if 'bins' in age_config:
-            age_bins = age_config['bins']
-        else:
-            age_bins = create_age_bins(
-                num_bins=age_config['num_bins'],
-                min_age=age_config['min_age'],
-                max_age=age_config['max_age']
-            )
+        # Age labels (0~100, 간격을 두고 표시)
+        age_labels = [str(i) if i % 10 == 0 else '' for i in range(101)]
         
-        age_labels = [f"{b[0]}-{b[1]}" for b in age_bins]
         gender_labels = ['Male', 'Female']
         
         plot_confusion_matrix(
             age_cm,
             age_labels,
-            'Age Confusion Matrix',
+            'Age Confusion Matrix (0~100 years)',
             str(output_dir / 'age_confusion_matrix.png')
         )
         
@@ -290,4 +276,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

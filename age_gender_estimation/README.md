@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 
-이 프로젝트는 실제 키오스크 환경에서 수행한 나이/성별 추정 시스템의 포트폴리오 버전입니다. 실제 상용 프로젝트 경험을 바탕으로, 공개 데이터셋과 신규 코드로 재구성한 독립 실행 가능한 Computer Vision 프로젝트입니다.
+이 프로젝트는 실제 키오스크 환경에서 수행한 나이/성별 추정 시스템의 포트폴리오 버전입니다.
 
 **중요**: 이 프로젝트는 실제 상용 코드, 모델 가중치, 데이터를 포함하지 않으며, 구조와 설계 철학만 참고하여 완전히 새로 구현되었습니다.
 
@@ -10,22 +10,33 @@
 
 이 시스템은 얼굴 이미지로부터 다음 두 가지를 동시에 예측합니다:
 
-1. **Age Estimation**: Multi-class classification (예: 0-10, 11-20, 21-30, ... 등 연령대)
+1. **Age Estimation**: Multi-class classification (0~100세, 1세 단위, 총 101 classes)
 2. **Gender Classification**: Binary classification (Male / Female)
 
 두 작업을 하나의 모델에서 Multi-Head 구조로 동시에 학습하여 효율적인 추론을 가능하게 합니다.
+
+### 나이 예측 정확도 평가
+
+나이 예측 정확도는 예측값과 실제값의 차이를 기준으로 측정합니다:
+- **±1세 범위**: 예측값이 실제값의 ±1세 범위 내에 있는 비율
+- **±3세 범위**: 예측값이 실제값의 ±3세 범위 내에 있는 비율
+- **±5세 범위**: 예측값이 실제값의 ±5세 범위 내에 있는 비율 (채택)
+- **±10세 범위**: 예측값이 실제값의 ±10세 범위 내에 있는 비율
+- **±15세 범위**: 예측값이 실제값의 ±15세 범위 내에 있는 비율
+
+실험 결과, **±5세 범위**에서 가장 높은 정확도를 보여 이를 최종 평가 기준으로 채택했습니다.
 
 ## 전체 파이프라인
 
 ```mermaid
 graph TD
-    A[Input Image<br/>전체 이미지, 여러 사람 포함 가능] --> B[Head Detection<br/>YOLO11]
-    B --> C[Crop Heads<br/>검출된 머리 영역 추출]
-    C --> D[Preprocessing<br/>Resize, Normalize]
+    A[Input Image<br/>전체 이미지, 여러 사람 포함 가능] --> B[Head Detection]
+    B --> C[Crop Heads]
+    C --> D[Preprocessing]
     D --> E[Backbone<br/>EfficientNet]
     E --> F[Age Head<br/>Multi-class Classification]
     E --> G[Gender Head<br/>Binary Classification]
-    F --> H[Age Output<br/>Age Bins]
+    F --> H[Age Output]
     G --> I[Gender Output<br/>Male/Female]
     
     style A fill:#e1f5ff
@@ -50,9 +61,9 @@ graph TD
 ### Multi-Head Architecture
 
 1. **Age Head**
-   - Backbone의 feature를 입력으로 받아 연령대를 분류합니다.
-   - 연령대는 설정 가능한 bin으로 나뉩니다 (예: 0-10, 11-20, 21-30, ...).
-   - 출력: 각 연령대에 대한 확률 분포
+   - Backbone의 feature를 입력으로 받아 나이를 분류합니다.
+   - 0~100세를 1세 단위로 분류 (총 101 classes).
+   - 출력: 각 나이(0~100)에 대한 확률 분포
 
 2. **Gender Head**
    - 동일한 Backbone feature를 사용하여 성별을 분류합니다.
@@ -62,8 +73,18 @@ graph TD
 ### 설계 철학
 
 - **Shared Backbone**: 두 작업이 공통 feature를 공유하여 효율적인 학습과 추론
-- **Multi-Task Learning**: 두 작업을 동시에 학습하여 서로 도움을 주는 효과
+- **Multi-Task Learning**: 나이와 성별을 동시에 학습하여 서로 도움을 주는 효과
+- **동시 추론**: 하나의 forward pass로 나이와 성별을 동시에 예측
 - **Lightweight Design**: Edge device 배포를 고려한 경량화 구조
+
+### 학습 방식
+
+나이와 성별이 동시에 추론되도록 훈련됩니다:
+
+1. **Forward Pass**: 하나의 이미지 입력으로 Backbone을 통과하여 공유 feature 추출
+2. **동시 예측**: 공유 feature를 Age Head와 Gender Head에 동시에 전달하여 두 예측을 동시에 수행
+3. **Loss 계산**: Age loss와 Gender loss를 각각 계산 후 가중합으로 결합
+4. **Backward Pass**: 한 번의 backward pass로 Backbone과 두 Head를 동시에 업데이트
 
 ## 데이터 구성 방식
 
@@ -82,7 +103,7 @@ data/
 - **이미지**: JPG, PNG 형식 지원
 - **Annotation**: CSV 또는 JSON 형식
   - 형식 예시: `image_path, age, gender`
-  - `age`: 정수 (0-100) 또는 연령대 인덱스
+  - `age`: 정수 (0-100, 1세 단위)
   - `gender`: 0 (Male) 또는 1 (Female)
 
 ### 권장 공개 데이터셋
@@ -198,7 +219,7 @@ python detection/predict_detector.py \
 # 검증 데이터셋으로 평가
 python evaluation.py --config configs/config.yaml --weights weights/best_model.pt
 
-# Age Accuracy, Gender Accuracy 출력
+# Age Accuracy (±5세 범위), Gender Accuracy 출력
 python evaluation.py --config configs/config.yaml --weights weights/best_model.pt --split test
 ```
 
@@ -220,8 +241,9 @@ python export_onnx.py --weights weights/best_model.pt --output model.onnx --opse
 - 모델 구조 (backbone, head 설정)
 - 학습 파라미터 (batch_size, learning_rate, epochs)
 - 데이터 경로
-- Age bins (연령대 구간)
+- Age classes (0~100세, 101 classes)
 - Augmentation 설정
+- 평가 범위 (±5세 범위 정확도)
 
 ## 프로젝트 구조
 

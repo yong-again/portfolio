@@ -4,9 +4,9 @@
 
 ```mermaid
 graph TD
-    A[Input Image<br/>JPG/PNG, 다양한 해상도] --> B[Head Detection<br/>YOLO11]
-    B --> C[Crop Head Regions<br/>검출된 머리 영역 추출]
-    C --> D[Image Loading<br/>PIL/OpenCV]
+    A[Input Image<br/>JPG/PNG, 다양한 해상도] --> B[Head Detection]
+    B --> C[Crop Head Regions]
+    C --> D[Image Loading]
     D --> E[Resize<br/>모델 입력 크기로 조정<br/>예: 224x224]
     E --> F[Normalization<br/>0,255 → 0,1 또는 ImageNet stats]
     F --> G{Training Mode?}
@@ -17,11 +17,11 @@ graph TD
     J --> K[Global Average Pooling<br/>Fixed-size Feature Vector]
     K --> L[Age Head<br/>FC Layers]
     K --> M[Gender Head<br/>FC Layers]
-    L --> N[Age Logits<br/>num_bins]
-    M --> O[Gender Logits<br/>2]
+    L --> N[Age Logits<br/>101 classes 0~100세]
+    M --> O[Gender Logits<br/>2 classes]
     N --> P[Softmax<br/>Age Probabilities]
     O --> Q[Softmax<br/>Gender Probabilities]
-    P --> R[Age Prediction<br/>Age Bin Index]
+    P --> R[Age Prediction<br/>0~100세]
     Q --> S[Gender Prediction<br/>Male/Female]
     
     style A fill:#e1f5ff
@@ -52,7 +52,7 @@ graph TD
     A[Start Training] --> B[For each Epoch]
     B --> C[For each Batch]
     C --> D[Forward Pass<br/>Backbone → Feature<br/>Age Head → Age Logits<br/>Gender Head → Gender Logits]
-    D --> E[Loss Calculation<br/>Age Loss CrossEntropy<br/>Gender Loss CrossEntropy<br/>Total = α·age + β·gender]
+    D --> E[Loss Calculation<br/>Age Loss CrossEntropy 0~100세<br/>Gender Loss CrossEntropy<br/>Total = α·age + β·gender<br/>동시에 학습]
     E --> F[Backward Pass<br/>Gradient 계산]
     F --> G[Optimizer Step<br/>파라미터 업데이트]
     G --> H{More Batches?}
@@ -113,6 +113,7 @@ graph TD
     F[장점] --> G[공유 feature로 효율적인 학습]
     F --> H[두 작업이 서로 도움을 주는 효과]
     F --> I[단일 forward pass로 두 예측 동시 수행]
+    F --> J[나이와 성별을 동시에 학습 및 추론]
     
     style A fill:#f3e5f5
     style B fill:#fce4ec

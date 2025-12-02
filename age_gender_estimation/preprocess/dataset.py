@@ -2,6 +2,7 @@
 Dataset Classes for Age & Gender Estimation
 
 CSV 또는 JSON 형식의 annotation을 읽어서 PyTorch Dataset을 생성합니다.
+Age는 0~100세를 1세 단위로 라벨링합니다.
 """
 
 import torch
@@ -21,6 +22,7 @@ class AgeGenderDataset(Dataset):
     Age & Gender Estimation을 위한 Dataset 클래스
     
     CSV 또는 JSON 형식의 annotation을 읽어서 이미지와 라벨을 반환합니다.
+    Age는 0~100세를 1세 단위로 라벨링합니다.
     """
     
     def __init__(
@@ -69,18 +71,6 @@ class AgeGenderDataset(Dataset):
         else:
             self.transform = get_val_transforms(config)
         
-        # Age bins 설정
-        age_config = config['model']['age']
-        if 'bins' in age_config:
-            self.age_bins = age_config['bins']
-        else:
-            from models.age_head import create_age_bins
-            self.age_bins = create_age_bins(
-                num_bins=age_config['num_bins'],
-                min_age=age_config['min_age'],
-                max_age=age_config['max_age']
-            )
-        
         print(f"Loaded {len(self.annotations)} samples from {data_dir}")
     
     def __len__(self) -> int:
@@ -93,8 +83,7 @@ class AgeGenderDataset(Dataset):
         Returns:
             Dictionary containing:
                 - 'image': 전처리된 이미지 텐서 [C, H, W]
-                - 'age': 나이 (정수)
-                - 'age_bin': 연령대 bin 인덱스
+                - 'age': 나이 (0~100, 정수)
                 - 'gender': 성별 (0: Male, 1: Female)
                 - 'image_path': 원본 이미지 경로
         """
@@ -116,11 +105,10 @@ class AgeGenderDataset(Dataset):
         
         # 라벨
         age = int(row.get('age', row.get('Age', 0)))
-        gender_str = str(row.get('gender', row.get('Gender', '0')))
+        # Age 범위 제한 (0~100)
+        age = max(0, min(100, age))
         
-        # Age bin 변환
-        from models.age_head import age_to_bin
-        age_bin = age_to_bin(age, self.age_bins)
+        gender_str = str(row.get('gender', row.get('Gender', '0')))
         
         # Gender 변환
         from models.gender_head import gender_to_class
@@ -132,8 +120,7 @@ class AgeGenderDataset(Dataset):
         
         return {
             'image': image_tensor,
-            'age': age,
-            'age_bin': age_bin,
+            'age': age,  # 0~100
             'gender': gender,
             'image_path': str(image_path)
         }
@@ -146,16 +133,13 @@ def collate_fn(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
     배치 내에서 이미지는 동일한 크기이므로 stack 가능합니다.
     """
     images = torch.stack([item['image'] for item in batch])
-    ages = torch.tensor([item['age'] for item in batch], dtype=torch.long)
-    age_bins = torch.tensor([item['age_bin'] for item in batch], dtype=torch.long)
+    ages = torch.tensor([item['age'] for item in batch], dtype=torch.long)  # 0~100
     genders = torch.tensor([item['gender'] for item in batch], dtype=torch.long)
     image_paths = [item['image_path'] for item in batch]
     
     return {
         'images': images,
-        'ages': ages,
-        'age_bins': age_bins,
+        'ages': ages,  # 0~100
         'genders': genders,
         'image_paths': image_paths
     }
-

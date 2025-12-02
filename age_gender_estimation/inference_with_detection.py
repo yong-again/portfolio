@@ -20,7 +20,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from models.network import build_network
 from models.utils import load_checkpoint
-from models.age_head import bin_to_age_range, create_age_bins
 from models.gender_head import class_to_gender
 from preprocess.transforms import get_val_transforms
 from detection.predict_detector import HeadDetector
@@ -62,20 +61,9 @@ def inference_with_detection(
             'detections': []
         }
     
-    # 2. Age & Gender Estimation for each detected head
+    # 2. Age & Gender Estimation for each detected head (동시에 추론)
     transform = get_val_transforms(config)
     age_gender_model.eval()
-    
-    # Age bins 생성
-    age_config = config['model']['age']
-    if 'bins' in age_config:
-        age_bins = age_config['bins']
-    else:
-        age_bins = create_age_bins(
-            num_bins=age_config['num_bins'],
-            min_age=age_config['min_age'],
-            max_age=age_config['max_age']
-        )
     
     detections = []
     
@@ -89,13 +77,12 @@ def inference_with_detection(
             image_tensor = transform(crop)
             image_tensor = image_tensor.unsqueeze(0).to(device)  # [1, C, H, W]
             
-            # Age & Gender 추론
+            # Age & Gender 추론: 나이와 성별을 동시에 예측
             predictions = age_gender_model.predict(image_tensor)
             
             # 결과 파싱
-            age_bin_idx = predictions['age']['predicted_bin'][0].item()
-            age_range = bin_to_age_range(age_bin_idx, age_bins)
-            age_prob = predictions['age']['probs'][0][age_bin_idx].item()
+            age_predicted = predictions['age']['predicted_age'][0].item()  # 0~100세
+            age_prob = predictions['age']['probs'][0][age_predicted].item()
             
             gender_class = predictions['gender']['predicted_class'][0].item()
             gender_str = class_to_gender(gender_class)
@@ -106,9 +93,7 @@ def inference_with_detection(
                 'bbox': box,
                 'detection_confidence': float(score),
                 'age': {
-                    'bin': age_bin_idx,
-                    'range': age_range,
-                    'estimated_age': (age_range[0] + age_range[1]) // 2,
+                    'predicted_age': age_predicted,  # 0~100세
                     'confidence': float(age_prob)
                 },
                 'gender': {
@@ -165,10 +150,7 @@ def save_results(
                     'bbox_x2': det['bbox'][2],
                     'bbox_y2': det['bbox'][3],
                     'detection_confidence': det['detection_confidence'],
-                    'age_bin': det['age']['bin'],
-                    'age_min': det['age']['range'][0],
-                    'age_max': det['age']['range'][1],
-                    'estimated_age': det['age']['estimated_age'],
+                    'age': det['age']['predicted_age'],  # 0~100세
                     'age_confidence': det['age']['confidence'],
                     'gender': det['gender']['label'],
                     'gender_confidence': det['gender']['confidence']
@@ -210,7 +192,7 @@ def visualize_result(image: Image.Image, result: Dict[str, Any]) -> Image.Image:
         draw.rectangle([x1, y1, x2, y2], outline='red', width=3)
         
         # 라벨 정보
-        age_info = f"Age: {det['age']['estimated_age']} ({det['age']['range'][0]}-{det['age']['range'][1]})"
+        age_info = f"Age: {det['age']['predicted_age']}세"  # 0~100세
         gender_info = f"Gender: {det['gender']['label']}"
         det_conf = f"Det: {det['detection_confidence']:.2f}"
         age_conf = f"Age: {det['age']['confidence']:.2f}"
@@ -334,11 +316,11 @@ def main():
         
         results.append(result)
         
-        # 결과 출력
+        # 결과 출력 (나이와 성별을 동시에 출력)
         print(f"  Detected {result['num_detections']} head(s)")
         for det in result['detections']:
             print(f"    Head {det['head_index']}: "
-                  f"Age {det['age']['estimated_age']} ({det['age']['range'][0]}-{det['age']['range'][1]}) "
+                  f"Age {det['age']['predicted_age']}세 "
                   f"[Conf: {det['age']['confidence']:.3f}], "
                   f"Gender {det['gender']['label']} [Conf: {det['gender']['confidence']:.3f}]")
         

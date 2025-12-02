@@ -2,7 +2,8 @@
 
 ## 프로젝트 개요
 
-이 프로젝트는 중고 스마트폰 자동 외관 검사 시스템의 포트폴리오 버전입니다. 
+이 프로젝트는 중고 스마트폰 자동 외관 검사 시스템의 포트폴리오 버전입니다.
+해당 프로젝트에서 디스플레이, 측면 개발을 맡았습니다.
 
 **중요**: 이 프로젝트는 실제 상용 코드, 데이터, 모델을 포함하지 않으며, 구조와 아이디어만 참고하여 완전히 새로 구현되었습니다.
 
@@ -24,10 +25,10 @@ graph TD
     A[Input Image<br/>1080x1920] --> B[Phone Region Detection<br/>YOLO or Segmentation]
     B --> C[Crop Phone Region]
     C --> D{Section Type}
-    D -->|Front| E[Front Pipeline<br/>YOLO → CLAHE → Model]
+    D -->|Front| E[Front Pipeline]
     D -->|Back| F[Back Pipeline]
-    D -->|Display| G[Display Pipeline<br/>Segmentation → Defect Seg]
-    D -->|Side| H[Side Pipeline<br/>Seg → YOLO → Model]
+    D -->|Display| G[Display Pipeline<br/>]
+    D -->|Side| H[Side Pipeline]
     E --> I[Defect Segmentation]
     F --> I
     G --> I
@@ -54,13 +55,13 @@ graph TD
 
 ## 영역별 파이프라인
 
-### 전면 (Front)
+### 측면 (Side)
 
 ```mermaid
 graph LR
-    A[Phone Image] --> B[Phone Detection<br/>YOLO]
-    B --> C[Crop]
-    C --> D[Preprocessing<br/>CLAHE 적용]
+    A[Phone Image] --> B[Side Segmentation<br/>]
+    B --> C[Crop Side Area]
+    C --> D[Preprocessing]
     D --> E[Defect Segmentation Model]
     E --> F[Post-processing]
     F --> G[Defect Grade]
@@ -73,32 +74,11 @@ graph LR
     style G fill:#e0f2f1
 ```
 
-### 측면 (Side)
-
-```mermaid
-graph LR
-    A[Phone Image] --> B[Phone Segmentation<br/>Segmentation Model]
-    B --> C[Crop]
-    C --> D[Side Detection<br/>YOLO - 추론 제외]
-    D --> E[Preprocessing]
-    E --> F[Defect Segmentation Model]
-    F --> G[Post-processing]
-    G --> H[Defect Grade]
-    
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style D fill:#fff4e1
-    style E fill:#e8f5e9
-    style F fill:#f3e5f5
-    style G fill:#fff4e1
-    style H fill:#e0f2f1
-```
-
 ### 디스플레이 (Display)
 
 ```mermaid
 graph LR
-    A[Phone Image] --> B[Display Segmentation<br/>Segmentation Model]
+    A[Phone Image] --> B[Display Segmentation]
     B --> C[Crop Display Area]
     C --> D[Preprocessing]
     D --> E[Defect Segmentation Model]
@@ -119,15 +99,15 @@ graph LR
 
 ### Phone Region Detection
 
-- **YOLO**: 전면, 후면의 휴대폰 영역 검출
-- **Segmentation**: 측면, 디스플레이의 휴대폰 영역 검출
+- **YOLO**: 측면 버튼과 디스플레이 휴대폰 및 결함 검출
+- **Segmentation**: 측면 휴대폰 영역 및 결함 검출, 디스플레이 결함 영역 검출
 
 ### Defect Segmentation Model
 
 - **Backbone**: EfficientNet 또는 ResNet 기반 feature extractor
 - **Neck**: U-Net style decoder
 - **Head**: Multi-class segmentation head
-- **Output**: Pixel-level defect classification (A, B, C, D 등급)
+- **Output**: Pixel-level defect classification
 
 ### 결함 등급 시스템
 
@@ -155,7 +135,7 @@ data/
 ### 데이터 형식
 
 - **이미지**: JPG, PNG 형식, 1080x1920 해상도
-- **Phone Detection Annotation**: YOLO format
+- **Phone Detection Annotation**: YOLO format, COCO format
 - **Defect Segmentation Annotation**: Segmentation mask (각 pixel이 등급을 나타냄)
 
 ## 설치 및 환경 설정

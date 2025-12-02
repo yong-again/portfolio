@@ -97,7 +97,7 @@ defect_segmentation:
     preprocessing:
       scaler: ["normalize"]  # normalize, clahe, adaptive_equalize_histogram 등
       clahe:
-        enabled: false  # 디스플레이는 CLAHE 미사용
+        enabled: True
         clip_limit: 2.0
         tile_grid_size: [8, 8]
     
@@ -187,7 +187,6 @@ defect_segmentation:
 
 # 측면 전용: Side Detection (YOLO)
 side_detection:
-  # 측면 영역에서 실제 측면 부분만 검출 (추론에서 제외용)
   model: "yolo11n.pt"
   trained_model: "weights/side_detection/best.pt"
   input_size:

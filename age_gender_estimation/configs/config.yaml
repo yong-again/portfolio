@@ -38,11 +38,9 @@ model:
   # Age Head 설정
   age:
     enabled: true
-    num_bins: 10  # 연령대 구간 개수
+    num_classes: 101  # 0~100세, 1세 단위 (총 101 classes)
     min_age: 0
     max_age: 100
-    # 또는 bins 직접 지정
-    # bins: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     hidden_dim: 512  # Hidden layer dimension
   
   # Gender Head 설정
@@ -186,11 +184,16 @@ evaluation:
   metrics:
     - "age_accuracy"
     - "gender_accuracy"
-    - "age_top3_accuracy"
+    - "age_accuracy_range"  # ±5세 범위 정확도
     - "confusion_matrix"
   
-  # Age bin별 정확도 계산
-  per_bin_accuracy: true
+  # Age 정확도 측정 범위
+  age_accuracy_ranges:
+    - 1   # ±1세 범위
+    - 3   # ±3세 범위
+    - 5   # ±5세 범위 (채택)
+    - 10  # ±10세 범위
+    - 15  # ±15세 범위
   
   # 결과 저장
   save_predictions: true
