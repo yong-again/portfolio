@@ -40,7 +40,7 @@
 
 ### Deep Learning Frameworks
 - **PyTorch**: 모델 학습 및 추론
-- **Ultralytics YOLO**: Object Detection (YOLO11)
+- **Ultralytics YOLO**: Object Detection
 - **Segmentation Models PyTorch**: Segmentation 모델
 
 ### Computer Vision Libraries
@@ -84,7 +84,7 @@ portfolio/
 │   ├── inference_with_detection.py  # 통합 추론
 │   └── export_onnx.py          # ONNX 변환
 │
-└── README.md                  # 이 파일
+└── README.md                 
 ```
 
 ## 🚀 시작하기
