@@ -5,10 +5,10 @@
 ```mermaid
 graph TD
     A[Input Image<br/>1080x1920] --> B{Section Type}
-    B -->|Front| C[Phone Detection<br/>YOLO]
-    B -->|Back| D[Phone Detection<br/>YOLO]
+    B -->|Front| C[Phone Detection<br/>Segmentation Model]
+    B -->|Back| D[Phone Detection<br/>Segmentation Model]
     B -->|Display| E[Phone Segmentation<br/>Segmentation Model]
-    B -->|Side| F[Phone Segmentation<br/>Segmentation Model]
+    B -->|Side| F[Phone Segmentation<br/>Segmentation Model&YOLO]
     
     C --> G[Crop Phone Region]
     D --> G
@@ -16,14 +16,10 @@ graph TD
     F --> G
     
     G --> H{Section Type}
-    H -->|Front| I[Preprocessing<br/>CLAHE 적용]
-    H -->|Display| J[Preprocessing<br/>Normalize]
-    H -->|Side| K[Side Detection YOLO<br/>추론에서 제외]
-    
-    K --> L[Exclude Side Regions]
-    L --> J
+    H -->|Display| I[Preprocessing<br/>Normalize, CLAHE...]
+    H -->|Side| K[Side Buttons 예외처리]
+    K --> I
     I --> M[Defect Segmentation Model]
-    J --> M
     
     M --> N[Post-processing<br/>Temperature Scaling]
     N --> O[Post-processing<br/>Threshold 적용]
@@ -40,7 +36,6 @@ graph TD
     style F fill:#fff4e1
     style G fill:#fff4e1
     style I fill:#e8f5e9
-    style J fill:#e8f5e9
     style K fill:#fff4e1
     style M fill:#f3e5f5
     style N fill:#fff4e1
