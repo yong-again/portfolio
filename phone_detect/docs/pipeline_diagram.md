@@ -48,6 +48,8 @@ graph TD
 
 ## 디스플레이 파이프라인 상세
 
+<div align="center">
+
 ```mermaid
 graph TD
     A[Input Image<br/>1080x1920] --> B[Phone Segmentation<br/>Display Region Detection]
@@ -78,13 +80,17 @@ graph TD
     style M fill:#c8e6c9
 ```
 
+</div>
+
 ## 측면 파이프라인 상세
+
+<div align="center">
 
 ```mermaid
 graph TD
     A[Input Image<br/>1080x1920] --> B[Phone Segmentation<br/>Side Region Detection]
     B --> C[Crop Side Region]
-    C --> D[Side Detection YOLO<br/>측면 부분 검출]
+    C --> D[Side Detection YOLO<br/>측면 부분 버튼 검출]
     D --> E[Exclude Side Regions<br/>검출된 측면 영역 마스킹]
     E --> F[Resize<br/>768x256]
     F --> G[Preprocessing<br/>Normalize Histogram]
@@ -92,7 +98,7 @@ graph TD
     H --> I[Temperature Scaling<br/>T=2]
     I --> J[Threshold Application<br/>A:0, B:0.8, C:0.8]
     J --> K[Morphology<br/>Opening Operation]
-    K --> L[Pixel Count Check<br/>B 등급 threshold: 12500]
+    K --> L[Pixel Count Check]
     L --> M[Defect Pixel Analysis]
     M --> N[Grade Determination]
     N --> O[Select Top 2 Defects]
@@ -113,6 +119,8 @@ graph TD
     style N fill:#e0f2f1
     style O fill:#c8e6c9
 ```
+
+</div>
 
 ## 결함 등급 결정 프로세스
 

@@ -65,3 +65,5 @@ configs/local_*.yaml
 results/
 outputs/
 
+# venv
+phone/

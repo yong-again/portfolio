@@ -2,25 +2,36 @@
 
 ## 설계 의도
 
-이 프로젝트는 실제 상용 스마트폰 검사 시스템의 구조와 아이디어를 참고하여, 포트폴리오 목적으로 완전히 새로 구현된 프로젝트입니다.
+이 프로젝트는 실제 Mintit(주)에서 진행했던 휴대폰 결함 탐지 모델 개발의 구조와 아이디어를 참고하여, 포트폴리오 목적으로 완전히 새로 구현된 프로젝트입니다.
 
-### 핵심 원칙
-
-1. **독립 실행 가능성**: 이 프로젝트만으로도 학습, 추론, 평가가 가능해야 함
-2. **재현 가능성**: 설정 파일 기반으로 모든 하이퍼파라미터 관리
-3. **확장 가능성**: Detection 외에 Segmentation, Classification 모듈 추가 용이
-4. **명확한 구조**: 각 모듈의 역할이 명확하고, 코드 가독성 우선
 
 ## 아키텍처 설계
 
 ### 모델 구조 선택
 
-- **Backbone**: EfficientNet 또는 ResNet 계열
+#### Phone Area Detection/Segmentation
+
+- **전면/후면 검출 (PhoneDetector)**:
+  - **모델**: YOLO (Ultralytics)
+  - **이유**: 빠른 추론 속도, 높은 정확도의 객체 검출
+  - **출력**: Bounding box [x1, y1, x2, y2]
+
+- **측면/디스플레이 영역 검출 (PhoneSegmenter)**:
+  - **Encoder**: EfficientNet-B3
+  - **Decoder**: U-Net
+  - **사전 학습 가중치**: ImageNet
+  - **이유**: Pixel-level 정확도가 필요한 영역 검출, 경량화와 성능의 균형
+  - **출력**: Binary segmentation mask
+
+#### Defect Segmentation
+
+- **Encoder**: EfficientNet-B4
   - 이유: 경량화와 성능의 균형, ImageNet 사전 학습 가중치 활용 가능
-- **Neck**: FPN (Feature Pyramid Network)
-  - 이유: 다양한 크기의 객체 검출에 효과적
-- **Head**: Anchor-based 또는 Anchor-free
-  - 초기 구현은 Anchor-based로 시작, 필요시 Anchor-free로 전환 가능
+- **Decoder**: U-Net / FPN / DeepLabV3+
+  - U-Net: 기본 선택, 다양한 크기의 결함 검출에 효과적
+  - FPN: Multi-scale feature fusion
+  - DeepLabV3+: Atrous convolution을 통한 정밀한 경계 검출
+- **출력**: Multi-class segmentation mask (A, B, C, D 등급)
 
 ### 전처리 파이프라인
 
