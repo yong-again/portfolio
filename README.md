@@ -114,7 +114,6 @@ portfolio/
 - ✅ Human Head Detection 통합
 - ✅ ONNX Export 지원
 - ✅ Edge Inference 최적화
-- ✅ 공개 데이터셋 호환 (UTKFace, FairFace)
 
 ## 📝 프로젝트별 상세 문서
 
