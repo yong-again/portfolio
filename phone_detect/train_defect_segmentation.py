@@ -167,7 +167,7 @@ def get_optimizer(model: nn.Module, config: dict) -> optim.Optimizer:
         optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     elif opt_name == 'sgd':
         momentum = opt_config.get('momentum', 0.9)
-        optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
+        optimizer = optim.SGD(model.parameters(), lr=lr, momenum=momentum, weight_decay=weight_decay)
     else:
         raise ValueError(f"Unknown optimizer: {opt_name}")
     

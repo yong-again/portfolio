@@ -79,6 +79,11 @@ portfolio/
 │   │   ├── train_detector.py  # YOLO 학습
 │   │   └── predict_detector.py
 │   ├── preprocess/            # 전처리
+│   ├── service/               # 키오스크 서비스 모듈
+│   │   ├── kiosk_service.py   # 메인 서비스 클래스
+│   │   ├── camera_handler.py  # 카메라 및 멀티스레드 촬영
+│   │   ├── image_quality.py   # 이미지 품질 필터링
+│   │   └── database.py        # 데이터베이스 관리
 │   ├── train.py               # Multi-task 학습
 │   ├── inference.py           # 단일 이미지 추론
 │   ├── inference_with_detection.py  # 통합 추론
