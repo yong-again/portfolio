@@ -94,17 +94,3 @@ nc: 1
 ### 4. dataset.yaml 생성
 
 위 예시를 참고하여 `data/detection/dataset.yaml` 파일을 생성합니다.
-
-## 학습 실행
-
-데이터셋 준비가 완료되면 다음 명령으로 학습을 시작할 수 있습니다:
-
-```bash
-python detection/train_detector.py \
-    --data data/detection/dataset.yaml \
-    --model yolo11n.pt \
-    --epochs 100 \
-    --imgsz 640 \
-    --batch 16
-```
-

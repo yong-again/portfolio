@@ -20,6 +20,8 @@
 
 ## 전체 파이프라인
 
+<div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 10px 0;">
+
 ```mermaid
 graph TD
     A[Input Image<br/>1920x1080] --> B[Phone Region Detection<br/>YOLO or Segmentation]
@@ -53,9 +55,13 @@ graph TD
     style M fill:#c8e6c9
 ```
 
+</div>
+
 ## 영역별 파이프라인
 
 ### 측면 (Side)
+
+<div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 10px 0;">
 
 ```mermaid
 graph LR
@@ -74,7 +80,11 @@ graph LR
     style G fill:#e0f2f1
 ```
 
+</div>
+
 ### 디스플레이 (Display)
+
+<div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 10px 0;">
 
 ```mermaid
 graph LR
@@ -94,6 +104,8 @@ graph LR
     style G fill:#fce4ec
     style H fill:#e0f2f1
 ```
+
+</div>
 
 ## 모델 구조 요약
 
@@ -160,41 +172,6 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # 의존성 설치
 pip install -r requirements.txt
-```
-
-## 사용 예시
-
-### 학습 (Training)
-
-```bash
-# Phone Detection 모델 학습
-python train_phone_detection.py --config configs/config.yaml --section front
-
-# Defect Segmentation 모델 학습
-python train_defect_segmentation.py --config configs/config.yaml --section display
-```
-
-### 추론 (Inference)
-
-```bash
-# 디스플레이 결함 검출
-python inference.py --image path/to/image.jpg --section display --weights weights/display_best.pt
-
-# 측면 결함 검출
-python inference.py --image path/to/image.jpg --section side --weights weights/side_best.pt
-
-# 전체 파이프라인 (모든 영역)
-python inference.py --image path/to/image.jpg --all-sections
-```
-
-### 평가 (Evaluation)
-
-```bash
-# 검증 데이터셋으로 평가
-python evaluation.py --config configs/config.yaml --weights weights/best.pt --section display
-
-# 결함 등급별 정확도 출력
-python evaluation.py --config configs/config.yaml --weights weights/best.pt --section display --metrics grade_accuracy
 ```
 
 ## 설정 파일

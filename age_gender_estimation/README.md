@@ -28,6 +28,8 @@
 
 ## 전체 파이프라인
 
+<div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 10px 0;">
+
 ```mermaid
 graph TD
     A[Input Image<br/>전체 이미지, 여러 사람 포함<br/>가능] --> B[Head Detection<br>YOLOv8-Nano]
@@ -49,6 +51,8 @@ graph TD
     style H fill:#e0f2f1
     style I fill:#e0f2f1
 ```
+
+</div>
 
 ## 모델 구조 설명
 
@@ -137,102 +141,6 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## 사용 예시
-
-### 학습 (Training)
-
-```bash
-# 기본 학습 실행
-python train.py --config configs/config.yaml
-
-# 커스텀 설정으로 학습
-python train.py --config configs/config.yaml --batch-size 32 --epochs 50
-```
-
-### 추론 (Inference)
-
-#### 기본 추론 (얼굴 이미지 직접 입력)
-
-```bash
-# 단일 이미지 추론
-python inference.py --image ./data/sample/test.jpg
-
-# 폴더 내 모든 이미지 추론
-python inference.py --source ./data/sample/images/ --output results/
-
-# 모델 가중치 지정
-python inference.py --image test.jpg --weights weights/best_model.pt
-```
-
-#### Head Detection 포함 추론 (전체 이미지에서 머리 검출 후 추론)
-
-```bash
-# Head Detection + Age & Gender Estimation
-python inference_with_detection.py \
-    --age-gender-weights weights/best_model.pt \
-    --image ./data/sample/test.jpg \
-    --output results/
-
-# 폴더 내 모든 이미지 처리
-python inference_with_detection.py \
-    --age-gender-weights weights/best_model.pt \
-    --source ./data/sample/images/ \
-    --output results/
-```
-
-### Head Detection (YOLO)
-
-#### 학습
-
-```bash
-# Head Detection 모델 학습
-python detection/train_detector.py \
-    --data data/detection/dataset.yaml \
-    --model yolo11n.pt \
-    --epochs 100 \
-    --imgsz 640 \
-    --batch 16
-```
-
-#### 검증
-
-```bash
-# Head Detection 모델 검증
-python detection/val_detector.py \
-    --model weights/detection/best.pt \
-    --data data/detection/dataset.yaml
-```
-
-#### 추론 (Head Detection만)
-
-```bash
-# Head Detection만 수행 (crop된 머리 이미지 저장)
-python detection/predict_detector.py \
-    --model weights/detection/best.pt \
-    --source ./data/sample/images/ \
-    --output results/detection
-```
-
-### 평가 (Evaluation)
-
-```bash
-# 검증 데이터셋으로 평가
-python evaluation.py --config configs/config.yaml --weights weights/best_model.pt
-
-# Age Accuracy (±5세 범위), Gender Accuracy 출력
-python evaluation.py --config configs/config.yaml --weights weights/best_model.pt --split test
-```
-
-### ONNX Export
-
-```bash
-# PyTorch 모델을 ONNX로 변환
-python export_onnx.py --weights weights/best_model.pt --output model.onnx
-
-# Edge device용 최적화 옵션
-python export_onnx.py --weights weights/best_model.pt --output model.onnx --opset-version 11
-```
-
 ## 설정 파일
 
 모든 하이퍼파라미터와 경로 설정은 `configs/config.yaml`에서 관리됩니다.
@@ -273,6 +181,12 @@ age_gender_estimation/
 │   ├── train_detector.py   # YOLO head detection 학습
 │   ├── val_detector.py     # YOLO head detection 검증
 │   └── predict_detector.py # YOLO head detection 추론
+├── service/                # 키오스크 서비스 모듈
+│   ├── kiosk_service.py   # 메인 서비스 클래스
+│   ├── camera_handler.py  # 카메라 및 멀티스레드 촬영
+│   ├── image_quality.py   # 이미지 품질 필터링
+│   ├── database.py        # 데이터베이스 관리
+│   └── README.md          # 서비스 모듈 상세 문서
 └── docs/
     ├── pipeline_diagram.md  # 파이프라인 상세 다이어그램
     └── optimization_notes.md # 최적화 노트
@@ -300,21 +214,43 @@ age_gender_estimation/
 - **자동 Crop**: 검출된 머리 영역을 자동으로 crop하여 Age & Gender Estimation에 사용
 - **통합 파이프라인**: Head Detection → Crop → Age & Gender Estimation을 한 번에 수행
 
+자세한 내용은 [data/detection/README.md](data/detection/README.md)를 참조하세요.
+
+## Kiosk Service
+
+키오스크 환경에서 나이/성별 추정 서비스를 제공하는 모듈입니다.
+
+### 주요 기능
+
+- **사용자 접근 감지**: 20m 이내 사용자 접근 감지
+- **멀티스레드 촬영**: 카메라 활성화 상태에서 10장 연속 촬영
+- **이미지 품질 필터링**: Blur, brightness, contrast 등을 평가하여 품질이 낮은 이미지 제거
+- **Head Detection 및 필터링**: RMS 계산 후 probability threshold를 넘은 head만 추출, 가장 큰 head 선택 (여러 사람 탐지 on-off 가능)
+- **Age & Gender 추정**: 필터링된 head에서 나이와 성별을 동시에 예측
+- **데이터베이스 저장**: 추론 결과를 DB에 저장 (사진 ID, 나이, 성별, 타임스탬프 등)
+
 ### 사용 방법
 
-1. **Head Detection 모델 학습**:
-   ```bash
-   python detection/train_detector.py --data data/detection/dataset.yaml
-   ```
+```python
+from service import KioskService
 
-2. **통합 추론** (권장):
-   ```bash
-   python inference_with_detection.py \
-       --age-gender-weights weights/best_model.pt \
-       --image test.jpg
-   ```
+# 서비스 인스턴스 생성
+service = KioskService(
+    config_path="configs/config.yaml",
+    detection_model_path="weights/detection/best.pt",
+    age_gender_weights="weights/best_model.pt",
+    db_path="data/kiosk_results.db",
+    enable_multi_person=False  # 단일 사람 모드
+)
 
-자세한 내용은 [data/detection/README.md](data/detection/README.md)를 참조하세요.
+# 서비스 시작 (백그라운드에서 자동 동작)
+service.start_service()
+
+# 서비스 중지
+service.stop_service()
+```
+
+자세한 내용은 [service/README.md](service/README.md)를 참조하세요.
 
 ## Legal Notice
 
