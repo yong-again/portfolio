@@ -4,7 +4,7 @@
 
 ```mermaid
 graph TD
-    A[Input Image<br/>JPG/PNG, 1080x1920] --> B[Head Detection]
+    A[Input Image<br/>JPG/PNG, 1080x1920] --> B[Head Detection<br>YOLOv8-Nano]
     B --> C[Crop Head Regions]
     C --> D[Image Loading]
     D --> E[Resize<br/>모델 입력 크기로 조정<br/>예: 224x224]

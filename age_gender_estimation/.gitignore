@@ -69,3 +69,5 @@ outputs/
 *.onnx
 !models/*.onnx  # 예시 모델은 제외하지 않음
 
+# venv
+age/

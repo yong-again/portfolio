@@ -30,7 +30,7 @@
 
 ```mermaid
 graph TD
-    A[Input Image<br/>전체 이미지, 여러 사람 포함 가능] --> B[Head Detection]
+    A[Input Image<br/>전체 이미지, 여러 사람 포함<br/>가능] --> B[Head Detection<br>YOLOv8-Nano]
     B --> C[Crop Heads]
     C --> D[Preprocessing]
     D --> E[Backbone<br/>EfficientNet]
@@ -296,7 +296,7 @@ age_gender_estimation/
 
 ### 주요 기능
 
-- **YOLO 기반 Detection**: YOLO11 모델을 사용한 머리 검출
+- **YOLO 기반 Detection**: YOLO모델을 사용한 머리 검출
 - **자동 Crop**: 검출된 머리 영역을 자동으로 crop하여 Age & Gender Estimation에 사용
 - **통합 파이프라인**: Head Detection → Crop → Age & Gender Estimation을 한 번에 수행
 
