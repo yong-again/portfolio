@@ -71,3 +71,8 @@ outputs/
 
 # venv
 age/
+
+# detection data
+data/detection/images
+data/detection/labels
+data/detection/dataset.yaml
