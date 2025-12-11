@@ -30,8 +30,8 @@ class HeadDetector:
         """
         Args:
             model_path: 학습된 YOLO 모델 경로
-            conf_threshold: Confidence threshold
-            iou_threshold: IoU threshold for NMS
+            conf_threshold: 신뢰도 임계값
+            iou_threshold: NMS를 위한 IoU 임계값
             device: 추론 디바이스 (None이면 자동 선택)
         """
         self.model = YOLO(model_path)
@@ -64,10 +64,10 @@ class HeadDetector:
             padding_ratio: Crop 시 추가할 padding 비율 (0.1 = 10%)
         
         Returns:
-            Dictionary containing:
-                - 'boxes': 검출된 bounding boxes [N, 4] (x1, y1, x2, y2)
-                - 'scores': Confidence scores [N]
-                - 'crops': (optional) Crop된 head 이미지 리스트 [PIL.Image]
+            다음을 포함하는 딕셔너리:
+                - 'boxes': 검출된 바운딩 박스 [N, 4] (x1, y1, x2, y2)
+                - 'scores': 신뢰도 점수 [N]
+                - 'crops': (선택사항) Crop된 머리 이미지 리스트 [PIL.Image]
                 - 'num_detections': 검출 개수
         """
         # 이미지 로드
@@ -174,8 +174,8 @@ def predict_heads(
         model_path: 학습된 YOLO 모델 경로
         source: 입력 이미지 경로 또는 디렉토리
         output_dir: 결과 저장 디렉토리
-        conf_threshold: Confidence threshold
-        iou_threshold: IoU threshold
+        conf_threshold: 신뢰도 임계값
+        iou_threshold: IoU 임계값
         save_crops: Crop된 head 이미지 저장 여부
         save_annotated: 검출 결과가 그려진 이미지 저장 여부
         device: 추론 디바이스
@@ -250,8 +250,8 @@ def draw_boxes(image: Image.Image, boxes: List[List[float]], scores: List[float]
     
     Args:
         image: PIL Image
-        boxes: Bounding boxes [N, 4] (x1, y1, x2, y2)
-        scores: Confidence scores [N]
+        boxes: 바운딩 박스 [N, 4] (x1, y1, x2, y2)
+        scores: 신뢰도 점수 [N]
     
     Returns:
         바운딩 박스가 그려진 이미지

@@ -7,7 +7,7 @@ config.py 파일을 사용하여 학습 설정을 관리합니다.
 
 from pathlib import Path
 from ultralytics import YOLO
-from config import YOLOTrainingConfig, default_config
+from config import YOLOTrainingConfig
 
 
 def train_head_detector(config: YOLOTrainingConfig):

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Create split files for CrowdHuman dataset based on annotation directories.
+어노테이션 디렉토리를 기반으로 CrowdHuman 데이터셋의 split 파일을 생성합니다.
 """
 
 from pathlib import Path
 import json
 
 def create_splits():
-    """Create train.txt, val.txt, and test.txt split files."""
+    """train.txt, val.txt, test.txt split 파일을 생성합니다."""
     
-    # Directories
+    # 디렉토리
     img_dir = Path('/workspace/data/crowdhuman/Images')
     img_test_dir = Path('/workspace/data/crowdhuman/images_test')
     ann_train_dir = Path('/workspace/data/crowdhuman/annotations_json/annotation_train')
@@ -18,14 +18,14 @@ def create_splits():
     
     splits_dir.mkdir(parents=True, exist_ok=True)
     
-    # Get all images
+    # 모든 이미지 가져오기
     all_images = {}
     for img_path in img_dir.glob('*.jpg'):
         all_images[img_path.stem] = img_path.resolve()
     for img_path in img_dir.glob('*.png'):
         all_images[img_path.stem] = img_path.resolve()
     
-    # Get annotation IDs
+    # 어노테이션 ID 가져오기
     train_ids = set()
     val_ids = set()
     
@@ -49,7 +49,7 @@ def create_splits():
         except Exception as e:
             print(f"Error reading {ann_file}: {e}")
     
-    # Split images
+    # 이미지 분할
     train_images = []
     val_images = []
     test_images = []
@@ -60,12 +60,12 @@ def create_splits():
         elif img_stem in val_ids or img_stem.replace('_', ',') in val_ids:
             val_images.append(str(img_path))
         else:
-            # Check if it's in test directory
+            # 테스트 디렉토리에 있는지 확인
             test_path = img_test_dir / img_path.name
             if test_path.exists():
                 test_images.append(str(test_path.resolve()))
     
-    # Add test directory images
+    # 테스트 디렉토리 이미지 추가
     for img_path in img_test_dir.glob('*.jpg'):
         if str(img_path.resolve()) not in test_images:
             test_images.append(str(img_path.resolve()))
@@ -73,7 +73,7 @@ def create_splits():
         if str(img_path.resolve()) not in test_images:
             test_images.append(str(img_path.resolve()))
     
-    # Write split files
+    # 분할 파일 작성
     with open(splits_dir / 'train.txt', 'w') as f:
         f.write('\n'.join(sorted(train_images)))
     

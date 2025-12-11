@@ -21,7 +21,7 @@ class YOLOTrainingConfig:
     epochs: int = 500  # 총 학습 epoch 수
     time: Optional[float] = None  # 최대 학습 시간(시간), epochs를 덮어씀
     patience: int = 20  # 조기 중단을 위한 patience (epochs)
-    batch: Union[int, float] = 0.7  # 배치 크기 (정수, -1=자동 60%, 0.70=70% GPU)
+    batch: Union[int, float] = -1  # 배치 크기 (정수, -1=자동 60%, 0.70=70% GPU)
     imgsz: int = 640  # 학습 대상 이미지 크기
     
     # 저장 및 체크포인트
@@ -34,7 +34,7 @@ class YOLOTrainingConfig:
     workers: int = 8  # 데이터 로딩을 위한 worker 스레드 수
     
     # 프로젝트 및 이름
-    project: Optional[str] = "runs/detect"  # 훈련 결과가 저장되는 프로젝트 디렉터리
+    project: Optional[str] = "/workspace/portfolio/age_gender_estimation/detection/runs/"  # 훈련 결과가 저장되는 프로젝트 디렉터리
     name: Optional[str] = "head_detection"  # 훈련 실행 이름
     exist_ok: bool = True  # 기존 프로젝트/이름 디렉터리 덮어쓰기
     
@@ -43,7 +43,7 @@ class YOLOTrainingConfig:
     
     # 최적화
     optimizer: str = 'AdamW'  # 최적화 알고리즘 (SGD, Adam, AdamW, NAdam, RAdam, RMSProp, auto)
-    seed: int = 0  # 훈련을 위한 임의 시드
+    seed: int = 42  # 훈련을 위한 임의 시드
     deterministic: bool = True  # 결정론적 알고리즘 사용 강제
     
     # 데이터 설정
@@ -118,18 +118,18 @@ class YOLOTrainingConfig:
 
 
 # 기본 설정 인스턴스
-default_config = YOLOTrainingConfig(
-    model="yolo11n.pt",
-    epochs=100,
-    batch=16,
-    imgsz=640,
-    patience=100,
-    project="runs/detect",
-    name="head_detection",
-    optimizer="auto",
-    cache=False,
-    exist_ok=False,
-)
+# default_config = YOLOTrainingConfig(
+#     model="yolo11n.pt",
+#     epochs=100,
+#     batch=16,
+#     imgsz=640,
+#     patience=100,
+#     project="runs/detect",
+#     name="head_detection",
+#     optimizer="auto",
+#     cache=False,
+#     exist_ok=False,
+#)
 
 
 # 사용 예시:

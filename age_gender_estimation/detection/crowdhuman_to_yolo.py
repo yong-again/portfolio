@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Convert CrowdHuman JSON annotations to YOLO format labels.
+CrowdHuman JSON 어노테이션을 YOLO 형식 라벨로 변환합니다.
 
-This script processes CrowdHuman-style annotations and converts them to
-YOLO format with support for train/val/test splits and multiprocessing.
+이 스크립트는 CrowdHuman 스타일 어노테이션을 처리하여
+train/val/test split 및 멀티프로세싱을 지원하는 YOLO 형식으로 변환합니다.
 """
 
 import argparse
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
+    """명령줄 인수를 파싱합니다."""
     parser = argparse.ArgumentParser(
         description='Convert CrowdHuman JSON annotations to YOLO format',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -116,15 +116,15 @@ def resolve_split_images(
     raw_img_root: Path
 ) -> List[Path]:
     """
-    Resolve image paths for a split based on source type.
+    소스 타입에 따라 split의 이미지 경로를 해결합니다.
     
     Args:
-        src_type: Type of source ('dir', 'txt', 'list', or None)
-        src: Source path (directory, text file, JSON file, or comma-separated list)
-        raw_img_root: Base directory for raw images
+        src_type: 소스 타입 ('dir', 'txt', 'list', 또는 None)
+        src: 소스 경로 (디렉토리, 텍스트 파일, JSON 파일, 또는 쉼표로 구분된 목록)
+        raw_img_root: 원본 이미지의 기본 디렉토리
     
     Returns:
-        List of absolute image paths
+        절대 이미지 경로 목록
     """
     if not src_type or not src:
         return []
@@ -190,14 +190,14 @@ def resolve_split_images(
 
 def image_path_to_json_path(image_path: Path, raw_ann_root: Path) -> Path:
     """
-    Map an image path to its corresponding JSON annotation file.
+    이미지 경로를 해당하는 JSON 어노테이션 파일로 매핑합니다.
     
     Args:
-        image_path: Path to the image file
-        raw_ann_root: Base directory for JSON annotations
+        image_path: 이미지 파일 경로
+        raw_ann_root: JSON 어노테이션의 기본 디렉토리
     
     Returns:
-        Path to the JSON annotation file
+        JSON 어노테이션 파일 경로
     """
     image_stem = image_path.stem
     
@@ -229,13 +229,13 @@ def image_path_to_json_path(image_path: Path, raw_ann_root: Path) -> Path:
 
 def load_image_size(image_path: Path) -> Tuple[int, int]:
     """
-    Load image and return its width and height.
+    이미지를 로드하고 너비와 높이를 반환합니다.
     
     Args:
-        image_path: Path to the image file
+        image_path: 이미지 파일 경로
     
     Returns:
-        Tuple of (width, height)
+        (width, height) 튜플
     """
     try:
         with Image.open(image_path) as img:
@@ -247,13 +247,13 @@ def load_image_size(image_path: Path) -> Tuple[int, int]:
 
 def load_annotation(json_path: Path) -> Optional[Dict]:
     """
-    Load JSON annotation file.
+    JSON 어노테이션 파일을 로드합니다.
     
     Args:
-        json_path: Path to the JSON annotation file
+        json_path: JSON 어노테이션 파일 경로
     
     Returns:
-        Parsed JSON dictionary or None if file doesn't exist
+        파싱된 JSON 딕셔너리 또는 파일이 없으면 None
     """
     if not json_path.exists():
         return None
@@ -271,14 +271,14 @@ def convert_bbox_xywh_to_yolo(
     img_w: int, img_h: int
 ) -> Tuple[float, float, float, float]:
     """
-    Convert bounding box from absolute pixel coordinates to YOLO format.
+    바운딩 박스를 절대 픽셀 좌표에서 YOLO 형식으로 변환합니다.
     
     Args:
-        x, y, w, h: Bounding box coordinates (x, y, width, height)
-        img_w, img_h: Image width and height
+        x, y, w, h: 바운딩 박스 좌표 (x, y, width, height)
+        img_w, img_h: 이미지 너비와 높이
     
     Returns:
-        Tuple of (x_center, y_center, width, height) normalized to [0, 1]
+        [0, 1]로 정규화된 (x_center, y_center, width, height) 튜플
     """
     xc = (x + w / 2.0) / img_w
     yc = (y + h / 2.0) / img_h
@@ -295,13 +295,13 @@ def convert_bbox_xywh_to_yolo(
 
 def tag_to_class_id(tag: str) -> Optional[int]:
     """
-    Convert tag string to class ID.
+    태그 문자열을 클래스 ID로 변환합니다.
     
     Args:
-        tag: Tag string ('person' or 'mask')
+        tag: 태그 문자열 ('person' 또는 'mask')
     
     Returns:
-        Class ID (0 for 'person', 1 for 'mask', None for unknown)
+        클래스 ID ('person'은 0, 'mask'는 1, 알 수 없으면 None)
     """
     tag_map = {
         'person': 0,
@@ -312,21 +312,21 @@ def tag_to_class_id(tag: str) -> Optional[int]:
 
 def process_single_image(args_tuple: Tuple) -> Dict:
     """
-    Process a single image: load annotation, convert to YOLO format, write label file.
+    단일 이미지를 처리합니다: 어노테이션 로드, YOLO 형식으로 변환, 라벨 파일 작성.
     
     Args:
-        args_tuple: Tuple containing:
-            - image_path: Path to the image
-            - split: Split name ('train', 'val', 'test')
-            - root_dir: Output root directory
-            - raw_ann_root: Base directory for JSON annotations
-            - box_type: Bounding box type ('vbox', 'fbox', 'hbox')
-            - head_only: Whether to extract only head coordinates
-            - copy_images: Whether to copy images
-            - symlink_images: Whether to symlink images
+        args_tuple: 다음을 포함하는 튜플:
+            - image_path: 이미지 경로
+            - split: Split 이름 ('train', 'val', 'test')
+            - root_dir: 출력 루트 디렉토리
+            - raw_ann_root: JSON 어노테이션의 기본 디렉토리
+            - box_type: 바운딩 박스 타입 ('vbox', 'fbox', 'hbox')
+            - head_only: 머리 좌표만 추출할지 여부
+            - copy_images: 이미지를 복사할지 여부
+            - symlink_images: 이미지를 심볼릭 링크로 만들지 여부
     
     Returns:
-        Dictionary with processing statistics
+        처리 통계를 담은 딕셔너리
     """
     (image_path, split, root_dir, raw_ann_root, box_type, head_only,
      copy_images, symlink_images) = args_tuple
@@ -363,12 +363,12 @@ def process_single_image(args_tuple: Tuple) -> Dict:
             
             for gtbox in gtboxes:
                 if head_only:
-                    # Head-only mode: use hbox and filter by head_attr
+                    # 머리 전용 모드: hbox 사용 및 head_attr로 필터링
                     head_attr = gtbox.get('head_attr', {})
                     if head_attr.get('ignore', 0) == 1:
                         continue
                     
-                    # Only process person tags for head detection
+                    # 머리 검출을 위해 person 태그만 처리
                     tag = gtbox.get('tag', '')
                     if tag.lower() != 'person':
                         continue
@@ -377,10 +377,10 @@ def process_single_image(args_tuple: Tuple) -> Dict:
                     if not bbox or len(bbox) != 4:
                         continue
                     
-                    # Use class 0 for heads (or you can use a separate class)
+                    # 머리에 대해 class 0 사용 (별도 클래스 사용 가능)
                     class_id = 0
                 else:
-                    # Normal mode: use specified box_type and filter by extra
+                    # 일반 모드: 지정된 box_type 사용 및 extra로 필터링
                     extra = gtbox.get('extra', {})
                     if extra.get('ignore', 0) == 1:
                         continue
@@ -427,7 +427,7 @@ def process_single_image(args_tuple: Tuple) -> Dict:
 
 
 def create_dataset_yaml(root_dir: Path, output_path: Path, head_only: bool = False):
-    """Create Ultralytics-style dataset.yaml file."""
+    """Ultralytics 스타일의 dataset.yaml 파일을 생성합니다."""
     if head_only:
         yaml_content = f"""path: {root_dir.absolute()}
 train: images/train
@@ -452,7 +452,7 @@ names: ["person", "mask"]
 
 
 def main():
-    """Main entry point."""
+    """메인 진입점."""
     args = parse_args()
     
     root_dir = Path(args.root_dir)
