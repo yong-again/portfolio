@@ -73,6 +73,13 @@ outputs/
 age/
 
 # detection data
-data/detection/images
-data/detection/labels
-data/detection/dataset.yaml
+data/*/
+detection/splits/
+
+# except readme in data
+!data/README.md
+!data/detection/README.md
+
+# weights
+weights/
+*.pt
