@@ -36,6 +36,7 @@ ENV/
 # Jupyter Notebook
 .ipynb_checkpoints
 notebooks/
+./notebooks/
 
 # Model Weights
 weights/*.pt
