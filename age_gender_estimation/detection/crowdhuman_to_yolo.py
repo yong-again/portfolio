@@ -77,6 +77,12 @@ def parse_args() -> argparse.Namespace:
     )
     
     parser.add_argument(
+        '--head-only',
+        action='store_true',
+        help='Extract only head coordinates (uses hbox and filters by head_attr)'
+    )
+    
+    parser.add_argument(
         '--num-workers',
         type=int,
         default=1,
@@ -315,13 +321,14 @@ def process_single_image(args_tuple: Tuple) -> Dict:
             - root_dir: Output root directory
             - raw_ann_root: Base directory for JSON annotations
             - box_type: Bounding box type ('vbox', 'fbox', 'hbox')
+            - head_only: Whether to extract only head coordinates
             - copy_images: Whether to copy images
             - symlink_images: Whether to symlink images
     
     Returns:
         Dictionary with processing statistics
     """
-    (image_path, split, root_dir, raw_ann_root, box_type,
+    (image_path, split, root_dir, raw_ann_root, box_type, head_only,
      copy_images, symlink_images) = args_tuple
     
     stats = {
@@ -355,18 +362,37 @@ def process_single_image(args_tuple: Tuple) -> Dict:
             gtboxes = ann_data.get('gtboxes', [])
             
             for gtbox in gtboxes:
-                extra = gtbox.get('extra', {})
-                if extra.get('ignore', 0) == 1:
-                    continue
-                
-                tag = gtbox.get('tag', '')
-                class_id = tag_to_class_id(tag)
-                if class_id is None:
-                    continue
-                
-                bbox = gtbox.get(box_type)
-                if not bbox or len(bbox) != 4:
-                    continue
+                if head_only:
+                    # Head-only mode: use hbox and filter by head_attr
+                    head_attr = gtbox.get('head_attr', {})
+                    if head_attr.get('ignore', 0) == 1:
+                        continue
+                    
+                    # Only process person tags for head detection
+                    tag = gtbox.get('tag', '')
+                    if tag.lower() != 'person':
+                        continue
+                    
+                    bbox = gtbox.get('hbox')
+                    if not bbox or len(bbox) != 4:
+                        continue
+                    
+                    # Use class 0 for heads (or you can use a separate class)
+                    class_id = 0
+                else:
+                    # Normal mode: use specified box_type and filter by extra
+                    extra = gtbox.get('extra', {})
+                    if extra.get('ignore', 0) == 1:
+                        continue
+                    
+                    tag = gtbox.get('tag', '')
+                    class_id = tag_to_class_id(tag)
+                    if class_id is None:
+                        continue
+                    
+                    bbox = gtbox.get(box_type)
+                    if not bbox or len(bbox) != 4:
+                        continue
                 
                 x, y, w, h = bbox
                 if w <= 0 or h <= 0:
@@ -400,9 +426,19 @@ def process_single_image(args_tuple: Tuple) -> Dict:
     return stats
 
 
-def create_dataset_yaml(root_dir: Path, output_path: Path):
+def create_dataset_yaml(root_dir: Path, output_path: Path, head_only: bool = False):
     """Create Ultralytics-style dataset.yaml file."""
-    yaml_content = f"""path: {root_dir.absolute()}
+    if head_only:
+        yaml_content = f"""path: {root_dir.absolute()}
+train: images/train
+val: images/val
+test: images/test
+
+nc: 1
+names: ["head"]
+"""
+    else:
+        yaml_content = f"""path: {root_dir.absolute()}
 train: images/train
 val: images/val
 test: images/test
@@ -440,7 +476,10 @@ def main():
     
     logger.info(f"Total images to process: {total_images}")
     logger.info(f"Using {args.num_workers} worker(s)")
-    logger.info(f"Box type: {args.box_type}")
+    if args.head_only:
+        logger.info("Mode: Head-only (using hbox, filtering by head_attr)")
+    else:
+        logger.info(f"Box type: {args.box_type}")
     
     for split in ['train', 'val', 'test']:
         if splits[split]:
@@ -456,6 +495,7 @@ def main():
                 str(root_dir),
                 raw_ann_root,
                 args.box_type,
+                args.head_only,
                 args.copy_images,
                 args.symlink_images
             ))
@@ -510,7 +550,7 @@ def main():
     
     if args.create_yaml:
         yaml_path = root_dir / 'dataset.yaml'
-        create_dataset_yaml(root_dir, yaml_path)
+        create_dataset_yaml(root_dir, yaml_path, args.head_only)
     
     logger.info("Conversion completed!")
 
