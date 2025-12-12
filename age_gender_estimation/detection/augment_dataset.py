@@ -1,11 +1,11 @@
 """
-YOLO Dataset Augmentation Script
+YOLO 데이터셋 증강 스크립트
 
-This script applies data augmentations to YOLO format datasets.
-Supports all YOLO augmentation parameters and creates augmented versions
-of the dataset while preserving YOLO format annotations.
+이 스크립트는 YOLO 형식 데이터셋에 데이터 증강을 적용합니다.
+모든 YOLO 증강 파라미터를 지원하며 YOLO 형식 어노테이션을 보존하면서
+데이터셋의 증강된 버전을 생성합니다.
 
-Usage:
+사용법:
     python augment_dataset.py \
         --input-dir /path/to/dataset \
         --output-dir /path/to/augmented_dataset \
@@ -42,7 +42,7 @@ import numpy as np
 import albumentations as A
 from tqdm import tqdm
 
-# Setup logging
+# 로깅 설정
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -51,24 +51,24 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
+    """명령줄 인자를 파싱합니다."""
     parser = argparse.ArgumentParser(
-        description='Apply data augmentations to YOLO format dataset',
+        description='YOLO 형식 데이터셋에 데이터 증강 적용',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     
-    # Input/Output
+    # 입력/출력
     parser.add_argument(
         '--input-dir',
         type=str,
         required=True,
-        help='Input dataset directory (YOLO format with images/ and labels/ subdirectories)'
+        help='입력 데이터셋 디렉토리 (images/ 및 labels/ 하위 디렉토리를 가진 YOLO 형식)'
     )
     parser.add_argument(
         '--output-dir',
         type=str,
         required=True,
-        help='Output directory for augmented dataset'
+        help='증강된 데이터셋을 저장할 출력 디렉토리'
     )
     parser.add_argument(
         '--splits',
@@ -76,105 +76,105 @@ def parse_args() -> argparse.Namespace:
         nargs='+',
         default=['train', 'val'],
         choices=['train', 'val', 'test'],
-        help='Dataset splits to augment'
+        help='증강할 데이터셋 분할'
     )
     
-    # HSV Augmentations
+    # HSV 증강
     parser.add_argument(
         '--hsv-h',
         type=float,
         default=0.015,
-        help='Hue adjustment (0.0 - 1.0)'
+        help='색조 조정 (0.0 - 1.0)'
     )
     parser.add_argument(
         '--hsv-s',
         type=float,
         default=0.7,
-        help='Saturation adjustment (0.0 - 1.0)'
+        help='채도 조정 (0.0 - 1.0)'
     )
     parser.add_argument(
         '--hsv-v',
         type=float,
         default=0.4,
-        help='Value (brightness) adjustment (0.0 - 1.0)'
+        help='명도 조정 (0.0 - 1.0)'
     )
     
-    # Geometric Augmentations
+    # 기하학적 증강
     parser.add_argument(
         '--degrees',
         type=float,
         default=0.0,
-        help='Rotation range in degrees (0.0 - 180.0)'
+        help='회전 범위 (도 단위, 0.0 - 180.0)'
     )
     parser.add_argument(
         '--translate',
         type=float,
         default=0.1,
-        help='Translation range as fraction of image size (0.0 - 1.0)'
+        help='이동 범위 (이미지 크기의 비율, 0.0 - 1.0)'
     )
     parser.add_argument(
         '--scale',
         type=float,
         default=0.5,
-        help='Scale range (>= 0.0)'
+        help='스케일 범위 (>= 0.0)'
     )
     parser.add_argument(
         '--shear',
         type=float,
         default=0.0,
-        help='Shear range in degrees (-180 - +180)'
+        help='전단 변환 범위 (도 단위, -180 - +180)'
     )
     parser.add_argument(
         '--perspective',
         type=float,
         default=0.0,
-        help='Perspective transformation (0.0 - 0.001)'
+        help='원근 변환 (0.0 - 0.001)'
     )
     
-    # Flip Augmentations
+    # 뒤집기 증강
     parser.add_argument(
         '--flipud',
         type=float,
         default=0.0,
-        help='Upside down flip probability (0.0 - 1.0)'
+        help='상하 뒤집기 확률 (0.0 - 1.0)'
     )
     parser.add_argument(
         '--fliplr',
         type=float,
         default=0.5,
-        help='Left-right flip probability (0.0 - 1.0)'
+        help='좌우 뒤집기 확률 (0.0 - 1.0)'
     )
     parser.add_argument(
         '--bgr',
         type=float,
         default=0.0,
-        help='BGR channel flip probability (0.0 - 1.0)'
+        help='BGR 채널 뒤집기 확률 (0.0 - 1.0)'
     )
     
-    # Advanced Augmentations
+    # 고급 증강
     parser.add_argument(
         '--mosaic',
         type=float,
         default=1.0,
-        help='Mosaic augmentation probability (0.0 - 1.0). Note: Applied during training, not in preprocessing.'
+        help='모자이크 증강 확률 (0.0 - 1.0). 참고: 전처리 시가 아닌 학습 중에 적용됩니다.'
     )
     parser.add_argument(
         '--mixup',
         type=float,
         default=0.0,
-        help='Mixup augmentation probability (0.0 - 1.0). Note: Applied during training, not in preprocessing.'
+        help='Mixup 증강 확률 (0.0 - 1.0). 참고: 전처리 시가 아닌 학습 중에 적용됩니다.'
     )
     parser.add_argument(
         '--cutmix',
         type=float,
         default=0.0,
-        help='CutMix augmentation probability (0.0 - 1.0). Note: Applied during training, not in preprocessing.'
+        help='CutMix 증강 확률 (0.0 - 1.0). 참고: 전처리 시가 아닌 학습 중에 적용됩니다.'
     )
     parser.add_argument(
         '--erasing',
         type=float,
         default=0.4,
-        help='Random erasing probability (0.0 - 0.9)'
+        help='랜덤 지우기 확률 (0.0 - 0.9)'
     )
     
     # Albumentations
@@ -182,32 +182,32 @@ def parse_args() -> argparse.Namespace:
         '--augmentations',
         type=str,
         default=None,
-        help='Path to JSON file with custom Albumentations transforms'
+        help='사용자 정의 Albumentations 변환을 포함한 JSON 파일 경로'
     )
     
-    # Processing Options
+    # 처리 옵션
     parser.add_argument(
         '--num-workers',
         type=int,
         default=8,
-        help='Number of worker processes for parallel processing'
+        help='병렬 처리를 위한 워커 프로세스 수'
     )
     parser.add_argument(
         '--augment-factor',
         type=int,
         default=1,
-        help='Number of augmented versions to create per image'
+        help='이미지당 생성할 증강 버전 수'
     )
     parser.add_argument(
         '--copy-original',
         action='store_true',
-        help='Copy original images to output directory (in addition to augmented versions)'
+        help='원본 이미지를 출력 디렉토리에 복사 (증강 버전에 추가하여)'
     )
     parser.add_argument(
         '--seed',
         type=int,
         default=42,
-        help='Random seed for reproducibility'
+        help='재현성을 위한 랜덤 시드'
     )
     
     return parser.parse_args()
@@ -215,10 +215,10 @@ def parse_args() -> argparse.Namespace:
 
 def load_yolo_annotations(label_path: Path) -> List[Tuple[int, float, float, float, float]]:
     """
-    Load YOLO format annotations.
+    YOLO 형식 어노테이션을 로드합니다.
     
     Returns:
-        List of (class_id, x_center, y_center, width, height) tuples
+        (class_id, x_center, y_center, width, height) 튜플의 리스트
     """
     if not label_path.exists():
         return []
@@ -241,7 +241,7 @@ def load_yolo_annotations(label_path: Path) -> List[Tuple[int, float, float, flo
                 width = float(parts[3])
                 height = float(parts[4])
                 
-                # Validate normalized coordinates
+                # 정규화된 좌표 검증
                 if 0 <= x_center <= 1 and 0 <= y_center <= 1 and \
                    0 < width <= 1 and 0 < height <= 1:
                     annotations.append((class_id, x_center, y_center, width, height))
@@ -252,7 +252,7 @@ def load_yolo_annotations(label_path: Path) -> List[Tuple[int, float, float, flo
 
 
 def save_yolo_annotations(label_path: Path, annotations: List[Tuple[int, float, float, float, float]]):
-    """Save YOLO format annotations."""
+    """YOLO 형식 어노테이션을 저장합니다."""
     label_path.parent.mkdir(parents=True, exist_ok=True)
     
     with open(label_path, 'w') as f:
@@ -263,26 +263,26 @@ def save_yolo_annotations(label_path: Path, annotations: List[Tuple[int, float, 
 def yolo_to_albumentations(annotations: List[Tuple[int, float, float, float, float]], 
                            img_width: int, img_height: int) -> List[Dict]:
     """
-    Convert YOLO format annotations to Albumentations format.
+    YOLO 형식 어노테이션을 Albumentations 형식으로 변환합니다.
     
     Returns:
-        List of dicts with 'bbox' and 'class_id' keys
+        'bbox'와 'class_id' 키를 가진 딕셔너리 리스트
     """
     albu_annotations = []
     for class_id, x_center, y_center, width, height in annotations:
-        # Convert normalized center coordinates to absolute pixel coordinates
+        # 정규화된 중심 좌표를 절대 픽셀 좌표로 변환
         x_abs = x_center * img_width
         y_abs = y_center * img_height
         w_abs = width * img_width
         h_abs = height * img_height
         
-        # Convert to (x_min, y_min, x_max, y_max) format
+        # (x_min, y_min, x_max, y_max) 형식으로 변환
         x_min = x_abs - w_abs / 2
         y_min = y_abs - h_abs / 2
         x_max = x_abs + w_abs / 2
         y_max = y_abs + h_abs / 2
         
-        # Clip to image boundaries
+        # 이미지 경계로 클리핑
         x_min = max(0, min(x_min, img_width))
         y_min = max(0, min(y_min, img_height))
         x_max = max(0, min(x_max, img_width))
@@ -300,10 +300,10 @@ def yolo_to_albumentations(annotations: List[Tuple[int, float, float, float, flo
 def albumentations_to_yolo(annotations: List[Dict], 
                            img_width: int, img_height: int) -> List[Tuple[int, float, float, float, float]]:
     """
-    Convert Albumentations format annotations back to YOLO format.
+    Albumentations 형식 어노테이션을 YOLO 형식으로 다시 변환합니다.
     
     Returns:
-        List of (class_id, x_center, y_center, width, height) tuples
+        (class_id, x_center, y_center, width, height) 튜플의 리스트
     """
     yolo_annotations = []
     for ann in annotations:
@@ -312,19 +312,19 @@ def albumentations_to_yolo(annotations: List[Dict],
         
         x_min, y_min, x_max, y_max = bbox
         
-        # Convert to center coordinates and normalize
+        # 중심 좌표로 변환하고 정규화
         width_abs = x_max - x_min
         height_abs = y_max - y_min
         x_center_abs = x_min + width_abs / 2
         y_center_abs = y_min + height_abs / 2
         
-        # Normalize
+        # 정규화
         x_center = x_center_abs / img_width
         y_center = y_center_abs / img_height
         width = width_abs / img_width
         height = height_abs / img_height
         
-        # Validate
+        # 검증
         if 0 <= x_center <= 1 and 0 <= y_center <= 1 and \
            0 < width <= 1 and 0 < height <= 1:
             yolo_annotations.append((class_id, x_center, y_center, width, height))
@@ -334,18 +334,18 @@ def albumentations_to_yolo(annotations: List[Dict],
 
 def create_augmentation_pipeline(args: argparse.Namespace, is_training: bool = True) -> A.Compose:
     """
-    Create Albumentations augmentation pipeline based on arguments.
+    인자에 기반하여 Albumentations 증강 파이프라인을 생성합니다.
     
     Args:
-        args: Parsed command-line arguments
-        is_training: Whether this is for training (affects which augmentations are applied)
+        args: 파싱된 명령줄 인자
+        is_training: 학습용인지 여부 (적용되는 증강에 영향을 줌)
     
     Returns:
-        Albumentations Compose object
+        Albumentations Compose 객체
     """
     transforms = []
     
-    # HSV augmentations
+    # HSV 증강
     if args.hsv_h > 0 or args.hsv_s > 0 or args.hsv_v > 0:
         transforms.append(A.HueSaturationValue(
             hue_shift_limit=int(args.hsv_h * 180),
@@ -354,7 +354,7 @@ def create_augmentation_pipeline(args: argparse.Namespace, is_training: bool = T
             p=1.0 if is_training else 0.0
         ))
     
-    # Geometric augmentations
+    # 기하학적 증강
     if args.degrees > 0:
         transforms.append(A.Rotate(
             limit=int(args.degrees),
@@ -396,7 +396,7 @@ def create_augmentation_pipeline(args: argparse.Namespace, is_training: bool = T
             p=1.0 if is_training else 0.0
         ))
     
-    # Flip augmentations
+    # 뒤집기 증강
     if args.flipud > 0:
         transforms.append(A.VerticalFlip(p=args.flipud if is_training else 0.0))
     
@@ -406,7 +406,7 @@ def create_augmentation_pipeline(args: argparse.Namespace, is_training: bool = T
     if args.bgr > 0:
         transforms.append(A.ChannelShuffle(p=args.bgr if is_training else 0.0))
     
-    # Random erasing
+    # 랜덤 지우기
     if args.erasing > 0:
         transforms.append(A.CoarseDropout(
             max_holes=8,
@@ -415,41 +415,41 @@ def create_augmentation_pipeline(args: argparse.Namespace, is_training: bool = T
             p=args.erasing if is_training else 0.0
         ))
     
-    # Load custom augmentations from JSON if provided
+    # 제공된 경우 JSON에서 사용자 정의 증강 로드
     if args.augmentations:
         aug_path = Path(args.augmentations)
         if aug_path.exists():
             with open(aug_path, 'r') as f:
                 custom_augs = json.load(f)
-                # Parse custom augmentations (simplified - would need full Albumentations JSON parser)
-                logger.info(f"Loaded custom augmentations from {aug_path}")
+                # 사용자 정의 증강 파싱 (간소화됨 - 전체 Albumentations JSON 파서가 필요함)
+                logger.info(f"사용자 정의 증강을 로드했습니다: {aug_path}")
     
-    # Return Compose with bbox parameters
+    # bbox 파라미터와 함께 Compose 반환
     return A.Compose(
         transforms,
         bbox_params=A.BboxParams(
             format='pascal_voc',
             label_fields=['class_id'],
-            min_visibility=0.1  # Filter out boxes that become too small
+            min_visibility=0.1  # 너무 작아진 박스 필터링
         )
     )
 
 
 def process_single_image(args_tuple: Tuple) -> Dict:
     """
-    Process a single image with augmentations.
+    단일 이미지에 증강을 적용하여 처리합니다.
     
     Args:
-        args_tuple: Tuple of (image_path, label_path, output_image_dir, output_label_dir, 
-                             transform_args, is_training, augment_factor, copy_original, seed_offset)
+        args_tuple: (image_path, label_path, output_image_dir, output_label_dir, 
+                    transform_args, is_training, augment_factor, copy_original, seed_offset) 튜플
     
     Returns:
-        Dictionary with processing statistics
+        처리 통계를 담은 딕셔너리
     """
     image_path, label_path, output_image_dir, output_label_dir, transform_args, \
         is_training, augment_factor, copy_original, seed_offset = args_tuple
     
-    # Create transform in worker process (for multiprocessing compatibility)
+    # 워커 프로세스에서 변환 생성 (멀티프로세싱 호환성을 위해)
     transform = create_augmentation_pipeline(transform_args, is_training=is_training)
     
     stats = {
@@ -459,7 +459,7 @@ def process_single_image(args_tuple: Tuple) -> Dict:
     }
     
     try:
-        # Load image
+        # 이미지 로드
         image = cv2.imread(str(image_path))
         if image is None:
             logger.warning(f"Failed to load image: {image_path}")
@@ -469,10 +469,10 @@ def process_single_image(args_tuple: Tuple) -> Dict:
         img_height, img_width = image.shape[:2]
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
-        # Load annotations
+        # 어노테이션 로드
         annotations = load_yolo_annotations(label_path)
         if not annotations:
-            # Create empty label file if no annotations
+            # 어노테이션이 없으면 빈 라벨 파일 생성
             output_label_path = output_label_dir / label_path.name
             save_yolo_annotations(output_label_path, [])
             if copy_original:
@@ -480,21 +480,21 @@ def process_single_image(args_tuple: Tuple) -> Dict:
             stats['processed'] = 1
             return stats
         
-        # Convert to Albumentations format
+        # Albumentations 형식으로 변환
         albu_annotations = yolo_to_albumentations(annotations, img_width, img_height)
         bboxes = [ann['bbox'] for ann in albu_annotations]
         class_ids = [ann['class_id'] for ann in albu_annotations]
         
-        # Apply augmentations
+        # 증강 적용
         image_stem = image_path.stem
         image_ext = image_path.suffix
         
         for aug_idx in range(augment_factor):
-            # Set random seed for this augmentation
+            # 이 증강을 위한 랜덤 시드 설정
             random.seed(seed_offset + aug_idx)
             np.random.seed(seed_offset + aug_idx)
             
-            # Apply transformation
+            # 변환 적용
             transformed = transform(
                 image=image_rgb,
                 bboxes=bboxes,
@@ -505,7 +505,7 @@ def process_single_image(args_tuple: Tuple) -> Dict:
             transformed_bboxes = transformed['bboxes']
             transformed_class_ids = transformed['class_id']
             
-            # Convert back to YOLO format
+            # YOLO 형식으로 다시 변환
             new_annotations = []
             for bbox, class_id in zip(transformed_bboxes, transformed_class_ids):
                 new_annotations.append({
@@ -516,7 +516,7 @@ def process_single_image(args_tuple: Tuple) -> Dict:
             new_height, new_width = transformed_image.shape[:2]
             yolo_annotations = albumentations_to_yolo(new_annotations, new_width, new_height)
             
-            # Save augmented image
+            # 증강된 이미지 저장
             if aug_idx == 0:
                 output_image_name = f"{image_stem}{image_ext}"
             else:
@@ -525,17 +525,17 @@ def process_single_image(args_tuple: Tuple) -> Dict:
             output_image_path = output_image_dir / output_image_name
             output_label_path = output_label_dir / f"{output_image_name.rsplit('.', 1)[0]}.txt"
             
-            # Convert RGB back to BGR for OpenCV
+            # OpenCV를 위해 RGB를 BGR로 다시 변환
             image_bgr = cv2.cvtColor(transformed_image, cv2.COLOR_RGB2BGR)
             cv2.imwrite(str(output_image_path), image_bgr)
             
-            # Save annotations
+            # 어노테이션 저장
             save_yolo_annotations(output_label_path, yolo_annotations)
             
             stats['processed'] += 1
             stats['annotations'] += len(yolo_annotations)
         
-        # Copy original if requested
+        # 요청된 경우 원본 복사
         if copy_original:
             shutil.copy2(image_path, output_image_dir / image_path.name)
             shutil.copy2(label_path, output_label_dir / label_path.name)
@@ -549,7 +549,7 @@ def process_single_image(args_tuple: Tuple) -> Dict:
 
 
 def augment_split(input_dir: Path, output_dir: Path, split: str, args: argparse.Namespace):
-    """Augment a single dataset split."""
+    """단일 데이터셋 분할에 증강을 적용합니다."""
     split_input_images = input_dir / 'images' / split
     split_input_labels = input_dir / 'labels' / split
     split_output_images = output_dir / 'images' / split
@@ -559,11 +559,11 @@ def augment_split(input_dir: Path, output_dir: Path, split: str, args: argparse.
         logger.warning(f"Split {split} images directory not found: {split_input_images}")
         return
     
-    # Create output directories
+    # 출력 디렉토리 생성
     split_output_images.mkdir(parents=True, exist_ok=True)
     split_output_labels.mkdir(parents=True, exist_ok=True)
     
-    # Find all images
+    # 모든 이미지 찾기
     image_extensions = ['.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG']
     image_paths = []
     for ext in image_extensions:
@@ -573,33 +573,33 @@ def augment_split(input_dir: Path, output_dir: Path, split: str, args: argparse.
         logger.warning(f"No images found in {split_input_images}")
         return
     
-    logger.info(f"Processing {len(image_paths)} images from split '{split}'")
+    logger.info(f"분할 '{split}'에서 {len(image_paths)}개의 이미지 처리 중")
     
-    # Create augmentation pipeline
+    # 증강 파이프라인 생성
     is_training = (split == 'train')
     transform = create_augmentation_pipeline(args, is_training=is_training)
     
-    # Prepare arguments for workers
+    # 워커를 위한 인자 준비
     worker_args = []
     for idx, image_path in enumerate(image_paths):
         label_path = split_input_labels / f"{image_path.stem}.txt"
-        seed_offset = args.seed + idx * 1000  # Unique seed per image
+        seed_offset = args.seed + idx * 1000  # 이미지당 고유 시드
         worker_args.append((
             image_path,
             label_path,
             split_output_images,
             split_output_labels,
-            args,  # Pass args object for transform creation
+            args,  # 변환 생성을 위해 args 객체 전달
             is_training,
             args.augment_factor,
             args.copy_original,
             seed_offset
         ))
     
-    # Process images
+    # 이미지 처리
     total_stats = {'processed': 0, 'failed': 0, 'annotations': 0}
     
-    # Create progress bar
+    # 진행 표시줄 생성
     pbar = tqdm(
         total=len(worker_args),
         desc=f"Augmenting {split}",
@@ -608,7 +608,7 @@ def augment_split(input_dir: Path, output_dir: Path, split: str, args: argparse.
     )
     
     if args.num_workers == 1:
-        # Single process mode
+        # 단일 프로세스 모드
         for worker_arg in worker_args:
             stats = process_single_image(worker_arg)
             for key in total_stats:
@@ -620,7 +620,7 @@ def augment_split(input_dir: Path, output_dir: Path, split: str, args: argparse.
                 'annotations': total_stats['annotations']
             })
     else:
-        # Multiprocessing mode
+        # 멀티프로세싱 모드
         with ProcessPoolExecutor(max_workers=args.num_workers) as executor:
             futures = {executor.submit(process_single_image, arg): arg for arg in worker_args}
             
@@ -642,14 +642,14 @@ def augment_split(input_dir: Path, output_dir: Path, split: str, args: argparse.
     
     pbar.close()
     
-    logger.info(f"Split '{split}' completed:")
-    logger.info(f"  Processed: {total_stats['processed']}")
-    logger.info(f"  Failed: {total_stats['failed']}")
-    logger.info(f"  Total annotations: {total_stats['annotations']}")
+    logger.info(f"분할 '{split}' 완료:")
+    logger.info(f"  처리됨: {total_stats['processed']}")
+    logger.info(f"  실패: {total_stats['failed']}")
+    logger.info(f"  총 어노테이션: {total_stats['annotations']}")
 
 
 def copy_dataset_yaml(input_dir: Path, output_dir: Path):
-    """Copy dataset.yaml to output directory and update paths."""
+    """dataset.yaml을 출력 디렉토리로 복사하고 경로를 업데이트합니다."""
     input_yaml = input_dir / 'dataset.yaml'
     output_yaml = output_dir / 'dataset.yaml'
     
@@ -657,7 +657,7 @@ def copy_dataset_yaml(input_dir: Path, output_dir: Path):
         with open(input_yaml, 'r') as f:
             content = f.read()
         
-        # Update path
+        # 경로 업데이트
         content = content.replace(f'path: {input_dir}', f'path: {output_dir}')
         
         with open(output_yaml, 'w') as f:
@@ -669,10 +669,10 @@ def copy_dataset_yaml(input_dir: Path, output_dir: Path):
 
 
 def main():
-    """Main function."""
+    """메인 함수."""
     args = parse_args()
     
-    # Set random seed
+    # 랜덤 시드 설정
     random.seed(args.seed)
     np.random.seed(args.seed)
     
@@ -683,30 +683,30 @@ def main():
         raise ValueError(f"Input directory does not exist: {input_dir}")
     
     logger.info("=" * 60)
-    logger.info("YOLO Dataset Augmentation")
+    logger.info("YOLO 데이터셋 증강")
     logger.info("=" * 60)
-    logger.info(f"Input directory: {input_dir}")
-    logger.info(f"Output directory: {output_dir}")
-    logger.info(f"Splits: {args.splits}")
-    logger.info(f"Augment factor: {args.augment_factor}")
-    logger.info(f"Workers: {args.num_workers}")
+    logger.info(f"입력 디렉토리: {input_dir}")
+    logger.info(f"출력 디렉토리: {output_dir}")
+    logger.info(f"분할: {args.splits}")
+    logger.info(f"증강 배수: {args.augment_factor}")
+    logger.info(f"워커 수: {args.num_workers}")
     logger.info("=" * 60)
     
-    # Create output directory
+    # 출력 디렉토리 생성
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Process each split
+    # 각 분할 처리
     for split in args.splits:
         logger.info(f"\n{'='*60}")
-        logger.info(f"Processing split: {split}")
+        logger.info(f"분할 처리 중: {split}")
         logger.info(f"{'='*60}")
         augment_split(input_dir, output_dir, split, args)
     
-    # Copy dataset.yaml
+    # dataset.yaml 복사
     copy_dataset_yaml(input_dir, output_dir)
     
     logger.info("=" * 60)
-    logger.info("Augmentation completed!")
+    logger.info("증강 완료!")
     logger.info("=" * 60)
 
 
