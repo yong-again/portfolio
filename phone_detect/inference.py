@@ -65,8 +65,8 @@ def save_results(
 
 def main():
     parser = argparse.ArgumentParser(description='Phone Defect Detection Inference')
-    parser.add_argument('--config', type=str, default='configs/config.yaml',
-                       help='Path to config file')
+    parser.add_argument('--config', type=str, default='configs/service_config.yaml',
+                       help='Path to config file (default: service_config.yaml)')
     parser.add_argument('--image', type=str, required=True,
                        help='Path to input image')
     parser.add_argument('--section', type=str, default='display',

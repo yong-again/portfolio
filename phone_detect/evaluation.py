@@ -266,8 +266,8 @@ def evaluate_model(
 
 def main():
     parser = argparse.ArgumentParser(description='Evaluate Phone Detection Model')
-    parser.add_argument('--config', type=str, default='configs/config.yaml',
-                       help='Path to config file')
+    parser.add_argument('--config', type=str, default='configs/service_config.yaml',
+                       help='Path to config file (default: service_config.yaml)')
     parser.add_argument('--weights', type=str, required=True,
                        help='Path to model weights')
     parser.add_argument('--split', type=str, default='val',

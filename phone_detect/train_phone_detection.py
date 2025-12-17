@@ -38,8 +38,8 @@ def setup_logging(log_dir: str, log_level: str = "INFO"):
 
 def main():
     parser = argparse.ArgumentParser(description='Train Phone Detection Model (YOLO)')
-    parser.add_argument('--config', type=str, default='configs/config.yaml',
-                       help='Path to config file')
+    parser.add_argument('--config', type=str, default='configs/train_config.yaml',
+                       help='Path to config file (default: train_config.yaml)')
     parser.add_argument('--section', type=str, default='front',
                        choices=['front', 'back'],
                        help='Section to train (front or back)')

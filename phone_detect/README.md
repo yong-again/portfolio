@@ -176,15 +176,32 @@ pip install -r requirements.txt
 
 ## 설정 파일
 
-모든 하이퍼파라미터와 경로 설정은 `configs/config.yaml`에서 관리됩니다.
+설정 파일은 용도에 따라 두 개로 분리되어 있습니다:
 
-주요 설정 항목:
-- 각 영역별 모델 구조 (backbone, decoder)
-- 학습 파라미터 (batch_size, learning_rate, epochs)
-- 데이터 경로
-- 입력 이미지 크기 (영역별로 다름)
-- 전처리/후처리 설정 (CLAHE, threshold, morphology)
-- 결함 등급 threshold
+### Service Config (`configs/service_config.yaml`)
+추론 및 서비스 실행에 필요한 설정입니다.
+
+- 각 영역별 모델 구조 및 가중치 경로
+- 전처리/후처리 설정 (temperature scaling, threshold, morphology 등)
+- 결함 등급 결정 설정
+- 하드웨어 설정
+- 추론 설정
+
+### Train Config (`configs/train_config.yaml`)
+모델 학습에 필요한 설정입니다.
+
+- 학습 파라미터 (batch_size, learning_rate, epochs, optimizer, scheduler)
+- 데이터 경로 (train, val, test)
+- 데이터 증강 설정
+- Loss 함수 설정
+- Early stopping 설정
+- 평가 메트릭 설정
+
+**사용법:**
+- 추론/서비스 실행: `--config configs/service_config.yaml` (기본값)
+- 모델 학습: `--config configs/train_config.yaml` (기본값)
+
+자세한 내용은 [configs/README.md](./configs/README.md)를 참조하세요.
 
 ## 프로젝트 구조
 

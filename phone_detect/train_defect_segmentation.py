@@ -281,8 +281,8 @@ def validate(
 
 def main():
     parser = argparse.ArgumentParser(description='Train Defect Segmentation Model')
-    parser.add_argument('--config', type=str, default='configs/config.yaml',
-                       help='Path to config file')
+    parser.add_argument('--config', type=str, default='configs/train_config.yaml',
+                       help='Path to config file (default: train_config.yaml)')
     parser.add_argument('--section', type=str, default='display',
                        choices=['display', 'side', 'front'],
                        help='Section to train')
