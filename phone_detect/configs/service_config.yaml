@@ -1,0 +1,248 @@
+# Phone Defect Detection Service Configuration
+# 추론 및 서비스 실행에 필요한 설정입니다.
+
+# 프로젝트 기본 설정
+project:
+  name: "phone_defect_detection"
+  version: "2.0.0"
+  seed: 42
+
+# 입력 이미지 설정
+input:
+  width: 1920
+  height: 1080
+
+# 데이터 경로 설정
+data:
+  # 데이터 형식
+  phone_detection_format: "yolo"  # yolo 또는 coco
+  defect_segmentation_format: "mask"  # mask (각 pixel이 등급을 나타냄)
+  
+  # 클래스 정보
+  phone_classes:
+    num_classes: 1
+    class_names:
+      - "phone"
+  
+  # 결함 등급
+  defect_grades:
+    - "A"  # 정상
+    - "B"  # 경미한 결함
+    - "C"  # 중간 결함
+    - "D"  # 심한 결함
+    num_classes: 4  # A, B, C, D
+
+# Phone Region Detection 설정
+phone_detection:
+  # 전면/후면: YOLO 사용
+  front:
+    method: "yolo"  # yolo 또는 segmentation
+    model: "yolo11n.pt"
+    trained_model: "weights/phone_detection/front_best.pt"
+    input_size:
+      width: 640
+      height: 640
+  
+  back:
+    method: "yolo"
+    model: "yolo11n.pt"
+    trained_model: "weights/phone_detection/back_best.pt"
+    input_size:
+      width: 640
+      height: 640
+  
+  # 측면/디스플레이: Segmentation 사용
+  side:
+    method: "segmentation"
+    model:
+      encoder_name: "efficientnet-b3"
+      encoder_weights: "imagenet"
+      classes: 5  # 배경 + 4개 영역
+    trained_model: "weights/phone_detection/side_best.pt"
+    input_size:
+      width: 1920
+      height: 1080
+  
+  display:
+    method: "segmentation"
+    model:
+      encoder_name: "efficientnet-b3"
+      encoder_weights: "imagenet"
+      classes: 2  # 배경 + 디스플레이
+    trained_model: "weights/phone_detection/display_best.pt"
+    input_size:
+      width: 512
+      height: 512
+
+# Defect Segmentation 모델 설정
+defect_segmentation:
+  # 디스플레이 (Display)
+  display:
+    model:
+      encoder_name: "efficientnet-b4"
+      encoder_weights: "imagenet"
+      decoder_name: "unet"
+      classes: 4  # A, B, C, D
+    trained_model: "weights/defect_segmentation/display_best.pt"
+    input_size:
+      width: 928
+      height: 512
+    
+    # 전처리
+    preprocessing:
+      scaler: ["normalize"]  # normalize, clahe, adaptive_equalize_histogram 등
+      clahe:
+        enabled: True
+        clip_limit: 2.0
+        tile_grid_size: [8, 8]
+    
+    # 후처리
+    postprocessing:
+      temperature_scaling:
+        enabled: true
+        T: 1
+      threshold:
+        A: 0.0
+        B: 0.9
+        C: 0.99
+        D: 0.99
+      morphology:
+        kernel_size_list: [3, 3, 3, 3, 3, 3, 3, 1, 1]
+        iters_list: [1, 1, 1, 1, 1, 1, 1, 1, 1]
+      small_defect_removal:
+        enabled: true
+        pixel_count_threshold: 200
+  
+  # 측면 (Side/Corner)
+  side:
+    model:
+      encoder_name: "efficientnet-b4"
+      encoder_weights: "imagenet"
+      decoder_name: "unet"
+      classes: 3  # A, B, C (측면은 A, B, C만)
+    trained_model: "weights/defect_segmentation/side_best.pt"
+    input_size:
+      width: 768
+      height: 256
+    
+    # 전처리
+    preprocessing:
+      scaler: ["normalize_histogram"]
+      clahe:
+        enabled: false
+    
+    # 후처리
+    postprocessing:
+      temperature_scaling:
+        enabled: true
+        T: 2
+      threshold:
+        A: 0.0
+        B: 0.8
+        C: 0.8
+      morphology:
+        kernel_size_list: [3, 3, 3]
+        iters_list: [1, 1, 1]
+      pixel_count_threshold: 12500  # B 등급 판정 threshold
+  
+  # 전면 (Front/Top)
+  front:
+    model:
+      encoder_name: "efficientnet-b4"
+      encoder_weights: "imagenet"
+      decoder_name: "unet"
+      classes: 4
+    trained_model: "weights/defect_segmentation/front_best.pt"
+    input_size:
+      width: 480
+      height: 256
+    
+    preprocessing:
+      scaler: ["imagenet_standardize"]
+      clahe:
+        enabled: true  # 전면은 CLAHE 사용
+        clip_limit: 2.0
+        tile_grid_size: [8, 8]
+    
+    postprocessing:
+      temperature_scaling:
+        enabled: true
+        T: 1
+      threshold:
+        A: 0.0
+        B: 0.0
+        C: 0.9999
+        D: 0.99
+      morphology:
+        kernel_size_list: 3
+        iters_list: 1
+      small_defect_removal:
+        enabled: true
+        pixel_count_threshold: 200
+    # 전면 영역 특화 파라미터
+    pixel_to_length_ratio: 1.0  # mm/pixel
+    length_count_thres: 20.0    # mm
+    pixel_count_thres: 0         # B 등급 픽셀 수 임계값
+
+# 측면 전용: Side Detection (YOLO)
+side_detection:
+  model: "yolo11n.pt"
+  trained_model: "weights/side_detection/best.pt"
+  input_size:
+    width: 768
+    height: 256
+  conf_threshold: 0.5
+  iou_threshold: 0.45
+
+# 결함 등급 결정 설정
+defect_grading:
+  # Pixel count threshold
+  pixel_count_thresholds:
+    B: 0  # B 등급 최소 pixel 수
+    C: 0  # C 등급 최소 pixel 수
+    D: 0  # D 등급 최소 pixel 수
+  
+  # Area threshold (pixel^2)
+  area_thresholds:
+    B: 0
+    C: 0
+    D: 0
+  
+  # Length threshold (mm) - 측면용
+  length_thresholds:
+    B: 20.0  # B 등급 최소 길이 (mm)
+    C: 0
+    D: 0
+  
+  # 최종 선정
+  select_top_n: 2  # 가장 심한 결함 N개 선정
+  grade_priority: ["D", "C", "B", "A"]  # 등급 우선순위 (높을수록 심함)
+
+# 경로 설정
+paths:
+  weights_dir: "weights"
+  checkpoint_dir: "weights/checkpoints"
+  output_dir: "results"
+  log_dir: "logs"
+  tensorboard_dir: "runs"
+
+# 하드웨어 설정
+device:
+  type: "cuda"  # cuda, cpu, mps
+  device_id: 0
+
+# 로깅 설정
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  log_file: "logs/service.log"
+  console_output: true
+
+# 추론 설정
+inference:
+  batch_size: 1
+  save_images: true
+  save_annotations: true
+  visualize: true
+  output_format: "json"  # json, yolo, coco
+  output_path: "results/inference"
+

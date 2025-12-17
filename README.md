@@ -57,8 +57,10 @@
 portfolio/
 │   
 ├── phone_detect/                      # 중고 스마트폰 결함 검출 시스템
-│   ├── configs/
-│   │   └── config.yaml                # 설정 파일
+│   ├── configs/                       # 설정 파일
+│   │   ├── service_config.yaml         # 추론/서비스용 설정
+│   │   ├── train_config.yaml           # 학습용 설정
+│   │   └── README.md                   # 설정 파일 가이드
 │   │
 │   ├── data/                          # 데이터 디렉터리
 │   │   ├── README.md
@@ -88,6 +90,12 @@ portfolio/
 │   │   ├── defect_preprocess.py
 │   │   ├── defect_postprocess.py
 │   │   └── pipeline.py
+│   │
+│   ├── service/                       # 결함 검출 서비스
+│   │   ├── __init__.py
+│   │   ├── front_service.py           # 전면 결함 검출 서비스
+│   │   ├── side_service.py            # 측면 결함 검출 서비스
+│   │   └── README.md                  # 서비스 가이드
 │   │
 │   ├── utils/                         # 유틸리티
 │   │   ├── __init__.py
@@ -125,7 +133,7 @@ portfolio/
 │   │   ├── config.py
 │   │   ├── predict_detector.py        # Detection 추론
 │   │   ├── train_detector.py          # YOLO 학습
-│   │   ├── val_detector.py            # Validation
+│   │   └── val_detector.py            # Validation
 │   │
 │   ├── docs/                          # 문서
 │   │   ├── optimization_notes.md
@@ -200,7 +208,12 @@ portfolio/
 
 모든 프로젝트는 YAML 형식의 설정 파일을 사용합니다:
 
-- `phone_detect/configs/config.yaml`: Phone Detection 설정
+### Phone Defect Detection
+- `phone_detect/configs/service_config.yaml`: 추론/서비스 실행용 설정
+- `phone_detect/configs/train_config.yaml`: 모델 학습용 설정
+- 자세한 내용: [phone_detect/configs/README.md](./phone_detect/configs/README.md)
+
+### Age & Gender Estimation
 - `age_gender_estimation/configs/config.yaml`: Age & Gender Estimation 설정
 
 주요 설정 항목:

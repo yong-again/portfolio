@@ -86,7 +86,7 @@ data/
 
 ### 3. 설정 파일 업데이트
 
-`configs/config.yaml`에서 데이터 경로를 설정:
+`configs/train_config.yaml`에서 데이터 경로를 설정:
 
 ```yaml
 data:
@@ -97,7 +97,7 @@ data:
 
 ## 데이터 증강 (Augmentation)
 
-데이터 증강은 학습 시 자동으로 적용됩니다. 설정은 `configs/config.yaml`에서 조정할 수 있습니다.
+데이터 증강은 학습 시 자동으로 적용됩니다. 설정은 `configs/train_config.yaml`의 `preprocessing.augmentation` 섹션에서 조정할 수 있습니다.
 
 주요 증강 기법:
 - Random flip (horizontal, vertical)
