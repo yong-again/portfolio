@@ -1,0 +1,49 @@
+# Ultralytics YOLO11n-P2 model for Small Object Detection
+# P2 layer (stride 4) added for better small object detection
+# Parameters
+nc: 1  # 클래스 수 (Head Detection이므로 1로 설정)
+scales: # model compound scaling constants, i.e. 'n', 's', 'm', 'l', 'x'
+  n: [0.50, 0.25, 1024] 
+
+backbone:
+  # [from, repeats, module, args]
+  - [-1, 1, Conv, [64, 3, 2]]  # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4  <-- 여기가 P2 (4배 축소)
+  - [-1, 2, C3k2, [256, false, 0.25]]
+  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
+  - [-1, 2, C3k2, [512, false, 0.25]]
+  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+  - [-1, 2, C3k2, [512, true]]
+  - [-1, 1, Conv, [1024, 3, 2]] # 7-P5/32
+  - [-1, 2, C3k2, [1024, true]]
+  - [-1, 1, SPPF, [1024, 5]]  # 9
+
+head:
+  - [-1, 1, nn.Upsample, [None, 2, 'nearest']]
+  - [[-1, 6], 1, Concat, [1]]  # cat backbone P4
+  - [-1, 2, C3k2, [512, false]]  # 12
+
+  - [-1, 1, nn.Upsample, [None, 2, 'nearest']]
+  - [[-1, 4], 1, Concat, [1]]  # cat backbone P3
+  - [-1, 2, C3k2, [256, false]]  # 15 (P3/8-small)
+
+  # --- P2 Layer 추가 부분 시작 ---
+  - [-1, 1, nn.Upsample, [None, 2, 'nearest']] # P3에서 P2로 업샘플링
+  - [[-1, 2], 1, Concat, [1]]  # cat backbone P2 (인덱스 2번 레이어와 결합)
+  - [-1, 2, C3k2, [128, false]] # 18 (P2/4-xsmall) <-- P2 특징 처리
+  # --- P2 Layer 추가 부분 끝 ---
+
+  - [-1, 1, Conv, [256, 3, 2]]
+  - [[-1, 15], 1, Concat, [1]] # cat head P3
+  - [-1, 2, C3k2, [256, false]] # 21 (P3/8-small)
+
+  - [-1, 1, Conv, [512, 3, 2]]
+  - [[-1, 12], 1, Concat, [1]] # cat head P4
+  - [-1, 2, C3k2, [512, false]] # 24 (P4/16-medium)
+
+  - [-1, 1, Conv, [512, 3, 2]]
+  - [[-1, 9], 1, Concat, [1]] # cat head P5
+  - [-1, 2, C3k2, [1024, true]] # 27 (P5/32-large)
+
+  # Detect Head에 18번(P2) 레이어 추가
+  - [[18, 21, 24, 27], 1, Detect, [nc]]

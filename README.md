@@ -50,47 +50,121 @@
 
 ## 📁 프로젝트 구조
 
+<details>
+<summary>프로젝트 디렉터리 구조 보기/숨기기</summary>
+
 ```
 portfolio/
-├── phone_detect/              # 중고 스마트폰 결함 검출 시스템
-│   ├── models/                # 모델 정의
-│   │   ├── phone_detector.py  # YOLO 기반 휴대폰 검출
-│   │   ├── phone_segmenter.py # Segmentation 기반 휴대폰 검출
-│   │   └── defect_segmenter.py # 결함 Segmentation 모델
-│   ├── preprocess/            # 전처리/후처리
+│   
+├── phone_detect/                      # 중고 스마트폰 결함 검출 시스템
+│   ├── configs/
+│   │   └── config.yaml                # 설정 파일
+│   │
+│   ├── data/                          # 데이터 디렉터리
+│   │   ├── README.md
+│   │   └── sample/
+│   │
+│   ├── docs/                          # 문서
+│   │   ├── notes.md
+│   │   └── pipeline_diagram.md
+│   │
+│   ├── inference/                     # 추론 파이프라인
+│   │   ├── __init__.py
+│   │   ├── display.py                 # 디스플레이 결함 검출
+│   │   └── side.py                    # 측면 결함 검출
+│   │
+│   ├── models/                        # 모델 정의
+│   │   ├── __init__.py
+│   │   ├── phone_detector.py          # YOLO 기반 휴대폰 검출
+│   │   ├── phone_segmenter.py         # Segmentation 기반 휴대폰 검출
+│   │   ├── defect_segmenter.py        # 결함 Segmentation 모델
+│   │   ├── detector.py
+│   │   ├── loss.py
+│   │   └── utils.py
+│   │
+│   ├── preprocess/                    # 전처리/후처리
+│   │   ├── __init__.py
+│   │   ├── dataset.py
 │   │   ├── defect_preprocess.py
-│   │   └── defect_postprocess.py
-│   ├── inference/             # 추론 파이프라인
-│   │   ├── display.py         # 디스플레이 결함 검출
-│   │   └── side.py            # 측면 결함 검출
-│   ├── utils/                 # 유틸리티
-│   │   └── defect_grade.py    # 결함 등급 결정
-│   ├── train_phone_detection.py
-│   ├── train_defect_segmentation.py
-│   └── inference.py
+│   │   ├── defect_postprocess.py
+│   │   └── pipeline.py
+│   │
+│   ├── utils/                         # 유틸리티
+│   │   ├── __init__.py
+│   │   └── defect_grade.py            # 결함 등급 결정
+│   │
+│   ├── weights/                       # 모델 가중치
+│   ├── train_phone_detection.py       # 휴대폰 검출 학습
+│   ├── train_defect_segmentation.py   # 결함 분할 학습
+│   ├── inference.py                   # 추론 스크립트
+│   ├── evaluation.py                  # 평가 스크립트
+│   ├── README.md
+│   └── requirements.txt
 │
-├── age_gender_estimation/     # 나이/성별 추정 시스템
-│   ├── models/                # 모델 정의
-│   │   ├── backbone.py        # EfficientNet Backbone
-│   │   ├── age_head.py        # Age Classification Head
-│   │   ├── gender_head.py     # Gender Classification Head
-│   │   └── network.py         # Multi-Head Network
-│   ├── detection/              # Head Detection
-│   │   ├── train_detector.py  # YOLO 학습
-│   │   └── predict_detector.py
-│   ├── preprocess/            # 전처리
-│   ├── service/               # 키오스크 서비스 모듈
-│   │   ├── kiosk_service.py   # 메인 서비스 클래스
-│   │   ├── camera_handler.py  # 카메라 및 멀티스레드 촬영
-│   │   ├── image_quality.py   # 이미지 품질 필터링
-│   │   └── database.py        # 데이터베이스 관리
-│   ├── train.py               # Multi-task 학습
-│   ├── inference.py           # 단일 이미지 추론
-│   ├── inference_with_detection.py  # 통합 추론
-│   └── export_onnx.py          # ONNX 변환
+├── age_gender_estimation/             # 나이/성별 추정 시스템
+│   ├── configs/
+│   │   └── config.yaml                # 설정 파일
+│   │
+│   ├── data/                          # 데이터 디렉터리
+│   │   ├── detection/                 # Detection 데이터셋
+│   │   │   └── README.md
+│   │   └── README.md
+│   │
+│   ├── detection/                     # Head Detection
+│   │   ├── architecture/              # YOLO 아키텍처 설정
+│   │   │   ├── yolo11n-p2.yaml
+│   │   │   └── yolo11s-p2.yaml
+│   │   ├── results/                   # 학습 결과
+│   │   │   └── head_detection/
+│   │   ├── splits/                    # 데이터 분할
+│   │   │   ├── test.txt
+│   │   │   ├── train.txt
+│   │   │   └── val.txt
+│   │   ├── __init__.py
+│   │   ├── augment_dataset.py         # 데이터 증강
+│   │   ├── config.py
+│   │   ├── predict_detector.py        # Detection 추론
+│   │   ├── train_detector.py          # YOLO 학습
+│   │   ├── val_detector.py            # Validation
+│   │
+│   ├── docs/                          # 문서
+│   │   ├── optimization_notes.md
+│   │   └── pipeline_diagram.md
+│   │
+│   ├── models/                        # 모델 정의
+│   │   ├── __init__.py
+│   │   ├── backbone.py                # EfficientNet Backbone
+│   │   ├── age_head.py                # Age Classification Head
+│   │   ├── gender_head.py             # Gender Classification Head
+│   │   ├── network.py                 # Multi-Head Network
+│   │   └── utils.py
+│   │
+│   ├── preprocess/                    # 전처리
+│   │   ├── __init__.py
+│   │   ├── dataset.py
+│   │   └── transforms.py
+│   │
+│   ├── service/                       # 키오스크 서비스 모듈
+│   │   ├── __init__.py
+│   │   ├── kiosk_service.py           # 메인 서비스 클래스
+│   │   ├── camera_handler.py          # 카메라 및 멀티스레드 촬영
+│   │   ├── image_quality.py           # 이미지 품질 필터링
+│   │   ├── database.py                # 데이터베이스 관리
+│   │   └── README.md
+│   │
+│   ├── weights/                       # 모델 가중치
+│   ├── train.py                       # Multi-task 학습
+│   ├── inference.py                   # 단일 이미지 추론
+│   ├── inference_with_detection.py    # 통합 추론
+│   ├── evaluation.py                  # 평가 스크립트
+│   ├── export_onnx.py                 # ONNX 변환
+│   ├── README.md
+│   └── requirements.txt
 │
-└── README.md                 
+└── README.md                          # 메인 README
 ```
+
+</details>
 
 ## 🚀 시작하기
 
